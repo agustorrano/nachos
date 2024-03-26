@@ -8,6 +8,7 @@
 #include "thread_test_prod_cons.hh"
 #include <stdlib.h>
 #include <stdio.h>
+#include "thread.hh"
 
 #define SZ 8
 static const unsigned N = 2;
@@ -62,13 +63,17 @@ int isEmpty() { return (contador == 0); }
 static void Producer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
+    DEBUG('z', "Entering Producer. thread %d \n", *n);
 	while (1) {
 		// sleep(random() % 3);
 		// pthread_mutex_lock(&mutexCond);
-        lockCounter->Acquire();
-    while (isFull()) 
-      // pthread_cond_wait(&notFull, &mutexCond);
-        notFull->Wait();
+        //lockCond->Acquire();
+        //DEBUG('z', "lockCond acquire. thread %d \n", *n);
+        
+        while (isFull()) notFull->Wait();
+        // pthread_cond_wait(&notFull, &mutexCond);
+        
+        DEBUG('z', "After Wait. thread %d \n", *n);
 		int *p = new int (sizeof *p);
 		*p = random() % 100;
 		printf("Productor %u: produje %p->%d\n", *n, p, *p);
@@ -84,13 +89,17 @@ static void Producer(void *n_)
 static void Consumer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
+    DEBUG('z', "Entering Consumer. thread %d \n", *n);
 	while (1) {
 		// sleep(random() % 3);
 		// pthread_mutex_lock(&mutexCond);
         lockCond->Acquire();
-		while (isEmpty()) 
+        DEBUG('z', "lockCond acquire. thread %d \n", *n);
+
+		while (isEmpty()) notEmpty->Wait();
 			// pthread_cond_wait(&notEmpty, &mutexCond);
-            notEmpty->Wait();
+        
+        DEBUG('z', "After Wait. thread %d \n", *n);
 		int *p = recibir();
 		printf("Consumidor %d: obtuve %p->%d\n", *n, p, *p);
 		free(p);
