@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "thread.hh"
+#include <unistd.h>
 
 #define SZ 8
 static const unsigned N = 2;
@@ -91,7 +92,7 @@ static void Consumer(void *n_)
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Consumer. thread %d \n", *n);
 	while (1) {
-		// sleep(random() % 3);
+		sleep(random() % 3);
 		// pthread_mutex_lock(&mutexCond);
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %d \n", *n);
