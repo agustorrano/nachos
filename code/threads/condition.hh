@@ -76,6 +76,12 @@ private:
 
     const char *name;
 
+    int count;
+
+    Semaphore* sem;
+
+    Lock* condLock;
+
     // Other needed fields are to be added here.
 };
 

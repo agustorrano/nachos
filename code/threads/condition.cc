@@ -23,12 +23,14 @@
 
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
-    // TODO
+    count = -1;
+    sem = new Semaphore(debugName, 1);
+    condLock = conditionLock;
 }
 
 Condition::~Condition()
 {
-    // TODO
+    delete sem;
 }
 
 const char *
@@ -40,17 +42,30 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
-    // TODO
+    condLock->Acquire();
+    count++;
+    condLock->Release();
+    sem->P();
 }
 
 void
 Condition::Signal()
 {
-    // TODO
+    condLock->Acquire();
+    if (count > 0) {
+        sem->V();
+        count--;
+    }
+    condLock->Release();
 }
 
 void
 Condition::Broadcast()
 {
-    // TODO
+    condLock->Acquire();
+    while (count > 0) {
+        sem->V();
+        count--;
+    }
+    condLock->Release();
 }
