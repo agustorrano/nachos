@@ -76,7 +76,9 @@ private:
 
     const char *name;
 
-    int count;
+    int waiters;
+
+    Lock* wLock;
 
     Semaphore* sem;
 

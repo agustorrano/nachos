@@ -23,7 +23,8 @@
 
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
-    count = -1;
+    waiters = -1;
+    wLock = new Lock("waiters lock");
     sem = new Semaphore(debugName, 1);
     condLock = conditionLock;
 }
@@ -43,8 +44,10 @@ void
 Condition::Wait()
 {
     // condLock->Acquire();
-    count++;
     condLock->Release();
+    wLock->Acquire();
+    waiters++;
+    wLock->Release();
     sem->P();
     condLock->Acquire();
 }
@@ -53,10 +56,12 @@ void
 Condition::Signal()
 {
     //condLock->Acquire();
-    if (count > 0) {
+    wLock->Acquire();
+    if (waiters > 0) {
         sem->V();
-        count--;
+        waiters--;
     }
+    wLock->Release();
     //condLock->Release();
 }
 
@@ -64,9 +69,11 @@ void
 Condition::Broadcast()
 {
     //condLock->Acquire();
-    while (count > 0) {
+    wLock->Acquire();
+    while (waiters > 0) {
         sem->V();
-        count--;
+        waiters--;
     }
+    wLock->Release();
     //condLock->Release();
 }
