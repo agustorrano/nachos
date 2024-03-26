@@ -67,8 +67,8 @@ static void Producer(void *n_)
 	while (1) {
 		// sleep(random() % 3);
 		// pthread_mutex_lock(&mutexCond);
-        //lockCond->Acquire();
-        //DEBUG('z', "lockCond acquire. thread %d \n", *n);
+        lockCond->Acquire();
+        DEBUG('z', "lockCond acquire. thread %d \n", *n);
         
         while (isFull()) notFull->Wait();
         // pthread_cond_wait(&notFull, &mutexCond);

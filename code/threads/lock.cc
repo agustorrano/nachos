@@ -25,7 +25,7 @@
 Lock::Lock(const char *debugName)
 {
     sem = new Semaphore(debugName, 1);
-    threadName = currentThread->GetName();
+    threadName = "none";
 }
 
 Lock::~Lock()
@@ -51,6 +51,7 @@ void
 Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
+    threadName = "none";
     sem->V();
 }
 

@@ -42,30 +42,31 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
-    condLock->Acquire();
+    // condLock->Acquire();
     count++;
     condLock->Release();
     sem->P();
+    condLock->Acquire();
 }
 
 void
 Condition::Signal()
 {
-    condLock->Acquire();
+    //condLock->Acquire();
     if (count > 0) {
         sem->V();
         count--;
     }
-    condLock->Release();
+    //condLock->Release();
 }
 
 void
 Condition::Broadcast()
 {
-    condLock->Acquire();
+    //condLock->Acquire();
     while (count > 0) {
         sem->V();
         count--;
     }
-    condLock->Release();
+    //condLock->Release();
 }
