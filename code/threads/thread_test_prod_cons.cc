@@ -6,14 +6,14 @@
 
 
 #include "thread_test_prod_cons.hh"
-#include <stdlib.h>
-#include <stdio.h>
 #include "thread.hh"
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #define SZ 8
-static const unsigned N = 2;
-static const unsigned M = 2;
+static const unsigned N = 5;
+static const unsigned M = 5;
 static bool done[N+M];
 
 /*
@@ -29,84 +29,90 @@ Condition* notFull;
 Condition* notEmpty;
 
 
-void enviar(int *p)
+void 
+enviar(int *p)
 {   
-	// pthread_mutex_lock(&mutexContador);
     lockCounter->Acquire();
 	buffer[contador] = p;
     contador++;
     lockCounter->Release();
-	// pthread_mutex_unlock(&mutexContador);
-  return;
+    printf("Productor %s: produje %p->%d\n", currentThread->GetName(), p, *p);
+    return;
 }
 
-int * recibir()
+int* 
+recibir()
 {
     int *recibido;
-	// pthread_mutex_lock(&mutexContador);
     lockCounter->Acquire();
     recibido = buffer[contador-1];
     contador--;
     lockCounter->Release();
-	// pthread_mutex_unlock(&mutexContador);
+    printf("Consumidor %s: obtuve %p->%d\n", currentThread->GetName(), recibido, *recibido);
 	return recibido;
 }
 
-int isFull() { return (contador == SZ); }
-int isEmpty() { return (contador == 0); }
+int 
+isFull() 
+{ 
+    return (contador == SZ); 
+}
 
-static void Producer(void *n_)
+int 
+isEmpty() 
+{ 
+    return (contador == 0); 
+}
+
+static void 
+Producer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Producer %u. thread %s \n", *n, currentThread->GetName());
 	while (1) {
-        sleep(0.1);
-		// pthread_mutex_lock(&mutexCond);
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
         
-        while (isFull()) notFull->Wait();
-        // pthread_cond_wait(&notFull, &mutexCond);
+        while (isFull()) 
+            notFull->Wait();
         
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
 		int *p = new int (sizeof *p);
 		*p = random() % 100;
-		printf("Productor %u: produje %p->%d\n", *n, p, *p);
 		enviar(p);
-		// pthread_cond_signal(&notEmpty);
+        currentThread->Yield();
         notEmpty->Signal();
-		//pthread_mutex_unlock(&mutexCond);
-        lockCond->Release();    
+        lockCond->Release();
+        currentThread->Yield();   
 	}
 	return;
 }
 
-static void Consumer(void *n_)
+static void 
+Consumer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Consumer %u. thread %s \n", *n, currentThread->GetName());
 	while (1) {
-		sleep(0.1);
-		// pthread_mutex_lock(&mutexCond);
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
 
-		while (isEmpty()) notEmpty->Wait();
-			// pthread_cond_wait(&notEmpty, &mutexCond);
-        
+		while (isEmpty()) 
+            notEmpty->Wait();
+    
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
 		int *p = recibir();
-		printf("Consumidor %d: obtuve %p->%d\n", *n, p, *p);
 		free(p);
-		// pthread_cond_signal(&notFull);
+        currentThread->Yield();
         notFull->Signal();
-		// pthread_mutex_unlock(&mutexCond);
         lockCond->Release();
+        currentThread->Yield();
 	}
 	return;
 }
 
-void ThreadTestProdCons()
+void 
+ThreadTestProdCons()
 {
     lockCond = new Lock("lockCond");
     lockCounter = new Lock("lockCounter");
@@ -144,15 +150,15 @@ void ThreadTestProdCons()
             currentThread->Yield();
         }
     }
-
+    
     printf("All threads finished. \n");
 
     // Free all the memory
     for (unsigned i = 0; i < M; i++) {
-	delete[] namesP[i];
+	    delete namesP[i];
     }
     for (unsigned i = 0; i < N; i++) {
-	delete[] namesC[i];
+	    delete namesC[i];
     }
     delete []valuesP;
     delete []valuesC;

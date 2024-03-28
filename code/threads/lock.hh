@@ -62,7 +62,7 @@ private:
 
     const char* threadName;
 
-    // Add other needed fields here.
+    Thread* thread;
 };
 
 

@@ -23,6 +23,7 @@
 
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
+    name = debugName;
     waiters = -1;
     wLock = new Lock("waiters lock");
     sem = new Semaphore(debugName, 1);

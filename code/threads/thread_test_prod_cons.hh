@@ -9,7 +9,7 @@
 
 #include "system.hh"
 #include "condition.hh"
-void ThreadTestProdCons();
 
+void ThreadTestProdCons();
 
 #endif

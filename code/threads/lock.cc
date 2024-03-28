@@ -24,8 +24,10 @@
 
 Lock::Lock(const char *debugName)
 {
+    name = debugName;
     sem = new Semaphore(debugName, 1);
     threadName = "none";
+    thread = nullptr;
 }
 
 Lock::~Lock()
@@ -43,21 +45,23 @@ void
 Lock::Acquire()
 {
     ASSERT(!IsHeldByCurrentThread());
-    threadName = currentThread->GetName();
+    // threadName = currentThread->GetName();
     sem->P();
+    thread = currentThread;
 }
 
 void
 Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
-    threadName = "none";
+    // threadName = "none";
+    thread = nullptr;
     sem->V();
 }
 
 bool
 Lock::IsHeldByCurrentThread() const
 {
-    const char* ctname = currentThread->GetName();
-    return !strcmp(ctname, threadName);
+    // const char* ctname = currentThread->GetName();
+    return thread == currentThread;
 }
