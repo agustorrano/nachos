@@ -11,9 +11,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SZ 8
-static const unsigned N = 5;
-static const unsigned M = 5;
+#define SZ 3
+static const int ITEMS_PRODUCED = 1000;
+static const unsigned N = 1;
+static const unsigned M = 1;
 static bool done[N+M];
 
 /*
@@ -34,9 +35,9 @@ enviar(int *p)
 {   
     lockCounter->Acquire();
 	buffer[contador] = p;
+    printf("Productor produce: %d en %d\n", *p + 1, contador);
     contador++;
     lockCounter->Release();
-    printf("Productor %s: produje %p->%d\n", currentThread->GetName(), p, *p);
     return;
 }
 
@@ -47,8 +48,8 @@ recibir()
     lockCounter->Acquire();
     recibido = buffer[contador-1];
     contador--;
+    printf("Consumidor consume: %d en %d\n", *recibido + 1, contador);
     lockCounter->Release();
-    printf("Consumidor %s: obtuve %p->%d\n", currentThread->GetName(), recibido, *recibido);
 	return recibido;
 }
 
@@ -69,22 +70,23 @@ Producer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Producer %u. thread %s \n", *n, currentThread->GetName());
-	while (1) {
+	for (int i = 0; i < ITEMS_PRODUCED; i++) {
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
         
-        while (isFull()) 
+        while (isFull()) {
+            printf("Productor esperando (buffer lleno)\n");
             notFull->Wait();
+        }
         
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
-		int *p = new int (sizeof *p);
-		*p = random() % 100;
-		enviar(p);
+		enviar(&i);
         currentThread->Yield();
         notEmpty->Signal();
         lockCond->Release();
         currentThread->Yield();   
 	}
+    done[N + (*n)] = true;
 	return;
 }
 
@@ -93,21 +95,23 @@ Consumer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Consumer %u. thread %s \n", *n, currentThread->GetName());
-	while (1) {
+	for (unsigned i = 0; i < ITEMS_PRODUCED; i++) {
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
 
-		while (isEmpty()) 
+		while (isEmpty()) {
+            printf("Consumidor esperando (buffer vacio)\n");
             notEmpty->Wait();
+        }
     
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
-		int *p = recibir();
-		free(p);
+		recibir();
         currentThread->Yield();
         notFull->Signal();
         lockCond->Release();
         currentThread->Yield();
 	}
+    done[*n] = true;
 	return;
 }
 
