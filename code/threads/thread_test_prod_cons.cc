@@ -22,7 +22,7 @@ static bool done[N+M];
  * productores los consiguen con malloc() y los
  * consumidores los liberan con free()
  */
-int *buffer[SZ], contador = 0;
+int buffer[SZ], contador = 0;
 
 Lock* lockCond;
 Lock* lockCounter;
@@ -31,24 +31,24 @@ Condition* notEmpty;
 
 
 void 
-enviar(int *p)
+enviar(int p, int n)
 {   
     lockCounter->Acquire();
 	buffer[contador] = p;
-    printf("Productor produce: %d en %d\n", *p, contador);
+    printf("Productor %d produce: %d en %d\n", n, p, contador);
     contador++;
     lockCounter->Release();
     return;
 }
 
-int* 
-recibir()
+int 
+recibir(int n)
 {
-    int *recibido;
+    int recibido;
     lockCounter->Acquire();
     recibido = buffer[contador-1];
     contador--;
-    printf("Consumidor consume: %d en %d\n", *recibido, contador);
+    printf("Consumidor %d consume: %d en %d\n", n, recibido, contador);
     lockCounter->Release();
 	return recibido;
 }
@@ -75,12 +75,12 @@ Producer(void *n_)
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
         
         while (isFull()) {
-            printf("Productor esperando (buffer lleno)\n");
+            printf("Productor %d esperando (buffer lleno)\n", *n);
             notFull->Wait();
         }
         
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
-		enviar(&i);
+        enviar(i, *n);
         currentThread->Yield();
         notEmpty->Signal();
         lockCond->Release();
@@ -100,12 +100,12 @@ Consumer(void *n_)
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
 
 		while (isEmpty()) {
-            printf("Consumidor esperando (buffer vacio)\n");
+            printf("Consumidor %d esperando (buffer vacio)\n", *n);
             notEmpty->Wait();
         }
-    
+        
         DEBUG('z', "After Wait. thread %s \n", currentThread->GetName());
-		recibir();
+        recibir(*n);
         currentThread->Yield();
         notFull->Signal();
         lockCond->Release();
