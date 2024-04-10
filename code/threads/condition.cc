@@ -14,9 +14,7 @@
 /// All rights reserved.  See `copyright.h` for copyright notice and
 /// limitation of liability and disclaimer of warranty provisions.
 
-
 #include "condition.hh"
-
 
 /// Dummy functions -- so we can compile our later assignments.
 ///
@@ -44,7 +42,6 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
-    // condLock->Acquire();
     condLock->Release();
     wLock->Acquire();
     waiters++;
@@ -56,25 +53,23 @@ Condition::Wait()
 void
 Condition::Signal()
 {
-    //condLock->Acquire();
     wLock->Acquire();
     if (waiters > 0) {
         sem->V();
         waiters--;
     }
     wLock->Release();
-    //condLock->Release();
 }
 
 void
 Condition::Broadcast()
 {
-    //condLock->Acquire();
+    condLock->Acquire();
     wLock->Acquire();
     while (waiters > 0) {
         sem->V();
         waiters--;
     }
     wLock->Release();
-    //condLock->Release();
+    condLock->Release();
 }
