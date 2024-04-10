@@ -35,7 +35,7 @@ enviar(int *p)
 {   
     lockCounter->Acquire();
 	buffer[contador] = p;
-    printf("Productor produce: %d en %d\n", *p + 1, contador);
+    printf("Productor produce: %d en %d\n", *p, contador);
     contador++;
     lockCounter->Release();
     return;
@@ -48,7 +48,7 @@ recibir()
     lockCounter->Acquire();
     recibido = buffer[contador-1];
     contador--;
-    printf("Consumidor consume: %d en %d\n", *recibido + 1, contador);
+    printf("Consumidor consume: %d en %d\n", *recibido, contador);
     lockCounter->Release();
 	return recibido;
 }
@@ -70,7 +70,7 @@ Producer(void *n_)
 {
 	unsigned *n = (unsigned *) n_;
     DEBUG('z', "Entering Producer %u. thread %s \n", *n, currentThread->GetName());
-	for (int i = 0; i < ITEMS_PRODUCED; i++) {
+	for (int i = 1; i <= ITEMS_PRODUCED; i++) {
         lockCond->Acquire();
         DEBUG('z', "lockCond acquire. thread %s \n", currentThread->GetName());
         
