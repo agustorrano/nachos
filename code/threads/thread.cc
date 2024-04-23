@@ -41,14 +41,15 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName)
+Thread::Thread(const char *threadName, int join)
 {
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
-    // allowJoin = join;
-    channel = new Channel(threadName);
+    allowJoin = join;
+    if (allowJoin)
+        channel = new Channel(threadName);
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
@@ -105,12 +106,17 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     interrupt->SetLevel(oldLevel);
 }
 
-void Thread::Join() {
+void 
+Thread::Join() 
+{
     ASSERT(this != currentThread);
+    ASSERT(allowJoin);
+
+    DEBUG('t', "Joining thread \"%s\"\n", name);
+
     int* buffer = new int;
-    this->channel->Receive(buffer);
-    DEBUG('t', "Delete TCB\n");
-    DEBUG('t', "this: %s\n currentThread: %s\n", this->GetName(), currentThread->GetName());
+    channel->Receive(buffer);
+    DEBUG('t', "Joined thread \"%s\"\n", name);
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -171,7 +177,9 @@ Thread::Finish()
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
-    channel->Send(1); // Father returned from Join
+    if (allowJoin)
+        channel->Send(1); // Father returned from Join
+    
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
     // Not reached.

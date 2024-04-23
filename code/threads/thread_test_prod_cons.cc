@@ -132,7 +132,7 @@ ThreadTestProdCons()
         sprintf(namesP[i], "Producer %u", i);
         printf("Name: %s\n", namesP[i]);
         valuesP[i] = i;
-        Thread *t = new Thread(namesP[i]);
+        Thread *t = new Thread(namesP[i], 0);
         t->Fork(Producer, (void *) &(valuesP[i]));
     }
 
@@ -145,7 +145,7 @@ ThreadTestProdCons()
         sprintf(namesC[i], "Consumer %u", i);
         printf("Name: %s\n", namesC[i]);
         valuesC[i] = i;
-        Thread *t = new Thread(namesC[i]);
+        Thread *t = new Thread(namesC[i], 0);
         t->Fork(Consumer, (void *) &(valuesC[i]));
     }
 	

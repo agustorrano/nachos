@@ -60,7 +60,7 @@ ThreadTestSimple()
     for(int i = 2; i <= 5; i++) {
         char str[4][2];
         sprintf(str[i-2], "%d", i);
-        Thread *newThread = new Thread(str[i-2]);
+        Thread *newThread = new Thread(str[i-2], 0);
         newThread->Fork(SimpleThread, NULL);
     }
     //the "main" thread also executes the same function

@@ -46,7 +46,7 @@ ThreadTestGarden()
         sprintf(names[i], "Turnstile %u", i);
         printf("Name: %s\n", names[i]);
         values[i] = i;
-        Thread *t = new Thread(names[i]);
+        Thread *t = new Thread(names[i], 0);
         t->Fork(Turnstile, (void *) &(values[i]));
     }
    
