@@ -51,6 +51,7 @@ Thread::Thread(const char *threadName, int join, int threadPriority)
     if (allowJoin)
         channel = new Channel(threadName);
     priority = threadPriority;
+    oldPriority = priority;
 
 #ifdef USER_PROGRAM
     space    = nullptr;
@@ -164,6 +165,25 @@ int
 Thread::GetPriority()
 {
     return priority;
+}
+
+int
+Thread::GetOldPriority()
+{
+    return oldPriority;
+}
+
+void
+Thread::InheritPriority(int newPriority)
+{
+    priority = newPriority;
+}
+
+void
+Thread::RestorePriority()
+{
+    if (priority != oldPriority)
+        priority = oldPriority;
 }
 
 /// Called by `ThreadRoot` when a thread is done executing the forked

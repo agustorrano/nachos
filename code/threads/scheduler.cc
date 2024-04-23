@@ -160,3 +160,11 @@ Scheduler::Print()
             readyList[i]->Apply(ThreadPrint);
     }
 }
+
+void
+Scheduler::ChangePriority(Thread *thread)
+{
+    int oldPriority = thread->GetOldPriority();
+    readyList[oldPriority]->Remove(thread);
+    ReadyToRun(thread);
+}

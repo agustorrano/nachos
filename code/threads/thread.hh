@@ -134,6 +134,12 @@ public:
 
     int GetPriority();
 
+    int GetOldPriority();
+
+    void InheritPriority(int newPriority);
+
+    void RestorePriority();
+
 private:
     // Some of the private data for this class is listed above.
 
@@ -152,6 +158,7 @@ private:
     Channel *channel;
 
     int priority;
+    int oldPriority;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

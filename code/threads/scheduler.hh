@@ -39,6 +39,8 @@ public:
     // Print contents of ready list.
     void Print();
 
+    void ChangePriority(Thread *thread);
+
 private:
 
     // Queue of threads that are reagdbdy to run, but not running.

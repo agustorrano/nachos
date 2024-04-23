@@ -18,6 +18,7 @@
 #include "lock.hh"
 #include "system.hh"
 #include <string.h>
+#include <stdio.h>
 
 
 /// Dummy functions -- so we can compile our later assignments.
@@ -45,7 +46,19 @@ void
 Lock::Acquire()
 {
     ASSERT(!IsHeldByCurrentThread());
-    // threadName = currentThread->GetName();
+
+    // A continuación se resuelve el problema de inversión de prioridades mediante
+    // la herencia de prioridades.
+    // En el caso de los semáforos no se puede hacer porque no tenemos información
+    // sobre el hilo que está utilizando los recursos. Es decir, si un hilo de alta
+    // prioridad queda bloqueado mediante sem->P(), no sabemos cual será el hilo que
+    // llame a sem->V() para desbloqueralo.
+    if (thread != nullptr)
+        if (thread->GetPriority() < currentThread->GetPriority()) {
+            DEBUG('t', "Thread \"%s\" inherits priority from thread \"%s\"\n", thread->GetName(), currentThread->GetName());
+            thread->InheritPriority(currentThread->GetPriority());
+            scheduler->ChangePriority(thread);      
+        }
     sem->P();
     thread = currentThread;
 }
@@ -54,7 +67,7 @@ void
 Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
-    // threadName = "none";
+    currentThread->RestorePriority();
     thread = nullptr;
     sem->V();
 }
@@ -62,6 +75,5 @@ Lock::Release()
 bool
 Lock::IsHeldByCurrentThread() const
 {
-    // const char* ctname = currentThread->GetName();
     return thread == currentThread;
 }
