@@ -48,6 +48,7 @@
 
 #include <stdint.h>
 
+class Channel;
 
 /// CPU register state to be saved on context switch.
 ///
@@ -109,6 +110,9 @@ public:
 
     /// Make thread run `(*func)(arg)`.
     void Fork(VoidFunctionPtr func, void *arg);
+    
+    // Current thread blocks until thread finishes
+    void Join();
 
     /// Relinquish the CPU if any other thread is runnable.
     void Yield();
@@ -140,6 +144,10 @@ private:
     ThreadStatus status;
 
     const char *name;
+
+    int allowJoin;
+
+    Channel *channel;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

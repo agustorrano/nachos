@@ -33,6 +33,8 @@ ThreadTestChannels()
   channel = new Channel("canal de mensajes");
   char **namesE = new char*[NUM_EMISOR];
   unsigned *valuesE = new unsigned[NUM_EMISOR];
+  List <Thread *> *threads;
+  threads = new List<Thread *>;
 
   for (int i = 0; i < NUM_EMISOR; i++) {
         printf("Launching emisor %u.\n", i);
@@ -41,6 +43,7 @@ ThreadTestChannels()
         printf("Name: %s\n", namesE[i]);
         valuesE[i] = i;
         Thread *t = new Thread(namesE[i]);
+        threads->Append(t);
         t->Fork(emisor, (void *) &(valuesE[i]));
     }
 
@@ -54,26 +57,33 @@ ThreadTestChannels()
         printf("Name: %s\n", namesR[i]);
         valuesR[i] = i;
         Thread *t = new Thread(namesR[i]);
+        threads->Append(t);
         t->Fork(receptor, (void *) &(valuesR[i]));
     }  
     
   // Wait until all turnstile threads finish their work.  `Thread::Join` is
   // not implemented at the beginning, therefore an ad-hoc workaround is
   // applied here.
+  // for (int i = 0; i < NUM_EMISOR + NUM_RECEPTOR; i++) {
+  //     while (!done[i]) {
+  //         currentThread->Yield();
+  //     }
+  // }
+  Thread *t;
   for (int i = 0; i < NUM_EMISOR + NUM_RECEPTOR; i++) {
-      while (!done[i]) {
-          currentThread->Yield();
-      }
+    t = threads->Pop();
+    t->Join();
   }
+
   DEBUG('c', "All Threads Finished!\n");
-  //for (unsigned i = 0; i < NUM_EMISOR; i++) {
-	//  delete[] namesE[i];
-  //}
-  //for (unsigned i = 0; i < NUM_RECEPTOR; i++) {
-	//  delete[] namesR[i];
-  //}
-  //delete []valuesE;
-  //delete []valuesR;
-  //delete []namesE;
-  //delete []namesR;
+  for (int i = 0; i < NUM_EMISOR; i++) {
+	  delete[] namesE[i];
+  }
+  for (int i = 0; i < NUM_RECEPTOR; i++) {
+	  delete[] namesR[i];
+  }
+  delete []valuesE;
+  delete []valuesR;
+  delete []namesE;
+  delete []namesR;
 }

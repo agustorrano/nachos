@@ -20,6 +20,7 @@
 #include "thread.hh"
 #include "switch.h"
 #include "system.hh"
+#include "channel.hh"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -46,6 +47,8 @@ Thread::Thread(const char *threadName)
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
+    // allowJoin = join;
+    channel = new Channel(threadName);
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
@@ -100,6 +103,14 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     scheduler->ReadyToRun(this);  // `ReadyToRun` assumes that interrupts
                                   // are disabled!
     interrupt->SetLevel(oldLevel);
+}
+
+void Thread::Join() {
+    ASSERT(this != currentThread);
+    int* buffer = new int;
+    this->channel->Receive(buffer);
+    printf("Delete TCB\n");
+    printf("this: %s\n currentThread: %s\n", this->GetName(), currentThread->GetName());
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -161,6 +172,7 @@ Thread::Finish()
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
     threadToBeDestroyed = currentThread;
+    channel->Send(1); // Father returned from Join
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
