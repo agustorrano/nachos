@@ -109,8 +109,8 @@ void Thread::Join() {
     ASSERT(this != currentThread);
     int* buffer = new int;
     this->channel->Receive(buffer);
-    printf("Delete TCB\n");
-    printf("this: %s\n currentThread: %s\n", this->GetName(), currentThread->GetName());
+    DEBUG('t', "Delete TCB\n");
+    DEBUG('t', "this: %s\n currentThread: %s\n", this->GetName(), currentThread->GetName());
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -171,8 +171,8 @@ Thread::Finish()
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
-    threadToBeDestroyed = currentThread;
     channel->Send(1); // Father returned from Join
+    threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
