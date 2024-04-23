@@ -56,7 +56,9 @@ THREAD_HDR = threads/condition.hh             \
              machine/system_dep.hh            \
              machine/statistics.hh            \
              machine/timer.hh                 \
-             threads/thread_test_garden_sem.hh
+             threads/thread_test_garden_sem.hh\
+             threads/thread_test_channels.hh  \
+             threads/channel.hh
 
 THREAD_SRC = threads/main.cc                  \
              threads/condition.cc             \
@@ -78,7 +80,9 @@ THREAD_SRC = threads/main.cc                  \
              machine/system_dep.cc            \
              machine/statistics.cc            \
              machine/timer.cc                 \
-             threads/thread_test_garden_sem.cc
+             threads/thread_test_garden_sem.cc\
+             threads/thread_test_channels.cc  \
+             threads/channel.cc
 
 USERPROG_HDR = userprog/address_space.hh            \
                userprog/args.hh                     \

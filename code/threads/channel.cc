@@ -3,6 +3,7 @@
 Channel::Channel(const char *debugName)
 {
     name = debugName;
+    buffer = new int;
     semReceive = new Semaphore("semReceive", 0);
     semSend = new Semaphore("semSend", 0);
     lockReceive = new Lock("lockReceive");
@@ -27,9 +28,10 @@ void
 Channel::Send(int message)
 {
     lockSend->Acquire();
-    semSend->P();
     *buffer = message;
-    semReceive->V();
+    DEBUG('c', "Emisor send %d.\n", message);
+    semSend->V();
+    semReceive->P();
     lockSend->Release();
 }
 
@@ -37,8 +39,9 @@ void
 Channel::Receive(int *message)
 {
     lockReceive->Acquire();
-    semSend->V();
-    message = buffer;
-    semReceive->P();
+    semSend->P();
+    *message = *buffer;
+    DEBUG('c', "Receptor received %d.\n", *message);
+    semReceive->V();
     lockReceive->Release();
 }
