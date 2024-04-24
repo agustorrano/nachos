@@ -1,9 +1,9 @@
 #include "thread_test_channels.hh"
+#define DOJOIN 1
 
 int NUM_MSGS = 10;
 int NUM_RECEPTOR = 5;
 int NUM_EMISOR = 5;
-
 Channel *channel;
 
 static void 
@@ -45,7 +45,7 @@ ThreadTestChannels()
         sprintf(namesE[i], "Emisor %u", i);
         printf("Name: %s\n", namesE[i]);
         valuesE[i] = i;
-        Thread *t = new Thread(namesE[i], 1);
+        Thread *t = new Thread(namesE[i], DOJOIN);
         threads->Append(t);
         t->Fork(emisor, (void *)&(valuesE[i]));
     }
@@ -60,7 +60,7 @@ ThreadTestChannels()
         sprintf(namesR[i], "Receptor %u", i);
         printf("Name: %s\n", namesR[i]);
         valuesR[i] = i;
-        Thread *t = new Thread(namesR[i], 1);
+        Thread *t = new Thread(namesR[i], DOJOIN);
         threads->Append(t);
         t->Fork(receptor, (void *)&(valuesR[i]));
     }

@@ -119,7 +119,7 @@ Thread::Join()
 
     int* buffer = new int;
     channel->Receive(buffer);
-    DEBUG('t', "Joined thread \"%s\"\n", name);
+    DEBUG('t', "Thread joined \"%s\"\n", name);
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
