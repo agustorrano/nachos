@@ -23,8 +23,6 @@
 
 #include <stdio.h>
 
-const unsigned NUM_QUEUES = 10;
-
 /// Initialize the list of ready but not running threads to empty.
 Scheduler::Scheduler()
 {

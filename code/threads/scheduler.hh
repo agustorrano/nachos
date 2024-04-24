@@ -14,6 +14,7 @@
 #include "thread.hh"
 #include "lib/list.hh"
 
+const unsigned NUM_QUEUES = 10;
 
 /// The following class defines the scheduler/dispatcher abstraction --
 /// the data structures and operations needed to keep track of which

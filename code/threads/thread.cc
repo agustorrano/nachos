@@ -41,8 +41,26 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
+Thread::Thread(const char *threadName, int join)
+{
+    name     = threadName;
+    stackTop = nullptr;
+    stack    = nullptr;
+    status   = JUST_CREATED;
+    allowJoin = join;
+    if (allowJoin)
+        channel = new Channel(threadName);
+    priority = 4;
+    oldPriority = priority;
+
+#ifdef USER_PROGRAM
+    space    = nullptr;
+#endif
+}
+
 Thread::Thread(const char *threadName, int join, int threadPriority)
 {
+    ASSERT(threadPriority < NUM_QUEUES);
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
