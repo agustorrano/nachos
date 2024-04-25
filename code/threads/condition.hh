@@ -17,7 +17,6 @@
 #ifndef NACHOS_THREADS_CONDITION__HH
 #define NACHOS_THREADS_CONDITION__HH
 
-
 #include "lock.hh"
 
 

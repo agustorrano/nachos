@@ -22,9 +22,8 @@
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
     name = debugName;
-    waiters = -1;
-    wLock = new Lock("waiters lock");
-    sem = new Semaphore(debugName, 1);
+    waiters = 0;
+    sem = new Semaphore(debugName, 0);
     condLock = conditionLock;
 }
 
@@ -42,10 +41,9 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
+    ASSERT(condLock->IsHeldByCurrentThread());
     condLock->Release();
-    wLock->Acquire();
     waiters++;
-    wLock->Release();
     sem->P();
     condLock->Acquire();
 }
@@ -53,23 +51,19 @@ Condition::Wait()
 void
 Condition::Signal()
 {
-    wLock->Acquire();
+    ASSERT(condLock->IsHeldByCurrentThread());
     if (waiters > 0) {
         sem->V();
         waiters--;
     }
-    wLock->Release();
 }
 
 void
 Condition::Broadcast()
 {
-    condLock->Acquire();
-    wLock->Acquire();
+    ASSERT(condLock->IsHeldByCurrentThread());
     while (waiters > 0) {
         sem->V();
         waiters--;
     }
-    wLock->Release();
-    condLock->Release();
 }
