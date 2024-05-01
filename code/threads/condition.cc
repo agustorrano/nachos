@@ -25,6 +25,7 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
     waiters = 0;
     sem = new Semaphore(debugName, 0);
     condLock = conditionLock;
+    DEBUG('v', "Condition variable <%s> created.\n", debugName);
 }
 
 Condition::~Condition()
@@ -44,14 +45,17 @@ Condition::Wait()
     ASSERT(condLock->IsHeldByCurrentThread());
     condLock->Release();
     waiters++;
+    DEBUG('v', "Thread waiting. Condition variable: %s.\n", this->GetName());
     sem->P();
     condLock->Acquire();
+    DEBUG('v', "Thread awaken. Condition variable: %s.\n", this->GetName());
 }
 
 void
 Condition::Signal()
 {
     ASSERT(condLock->IsHeldByCurrentThread());
+    DEBUG('v', "Thread send a signal. Condition variable: %s.\n", this->GetName());
     if (waiters > 0) {
         sem->V();
         waiters--;
@@ -62,6 +66,7 @@ void
 Condition::Broadcast()
 {
     ASSERT(condLock->IsHeldByCurrentThread());
+    DEBUG('v', "Thread broadcast on the condition variable %s.\n", this->GetName());
     while (waiters > 0) {
         sem->V();
         waiters--;
