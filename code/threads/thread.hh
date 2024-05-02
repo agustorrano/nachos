@@ -46,6 +46,9 @@
 #include "userprog/address_space.hh"
 #endif
 
+#include "syscall.h"
+#include "table.hh"
+#include "file_system.hh"
 #include <stdint.h>
 
 class Channel;
@@ -142,6 +145,14 @@ public:
 
     void RestorePriority();
 
+    int AddOpenFile(OpenFile item);
+
+    OpenFile GetOpenFile(int fd);
+
+    bool OpenFileExists(int fd);
+
+    OpenFile RemoveOpenFile(int fd);
+
 private:
     // Some of the private data for this class is listed above.
 
@@ -164,6 +175,7 @@ private:
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
+    Table<OpenFile> *openfiles;
 
 #ifdef USER_PROGRAM
     /// User-level CPU register state.
@@ -172,9 +184,13 @@ private:
     /// registers -- one for its state while executing user code, one for its
     /// state while executing kernel code.
     int userRegisters[NUM_TOTAL_REGS];
+    
 
 public:
 
+    //Table <OpenFile> *GetTable();
+    int AddOpenFile(T item);
+    
     // Save user-level register state.
     void SaveUserState();
 

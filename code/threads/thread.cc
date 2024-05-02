@@ -204,6 +204,7 @@ Thread::RestorePriority()
         priority = oldPriority;
 }
 
+
 /// Called by `ThreadRoot` when a thread is done executing the forked
 /// procedure.
 ///
@@ -347,8 +348,10 @@ Thread::StackAllocate(VoidFunctionPtr func, void *arg)
     machineState[WhenDonePCState] = (uintptr_t) ThreadFinish;
 }
 
+
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
+
 
 /// Save the CPU state of a user program on a context switch.
 ///
@@ -376,4 +379,29 @@ Thread::RestoreUserState()
     }
 }
 
+Table<OpenFile>* 
+Thread::GetTable() 
+{        
+    return openfiles;
+}
+
 #endif
+int 
+Thread::AddOpenFile(OpenFile item){
+    return openfiles->Add(item);
+}
+
+OpenFile
+Thread::GetOpenFile(int fd){
+    return openfiles->Get(fd);
+}
+
+bool
+Thread::OpenFileExists(int fd) {
+    return openfiles->HasKey(fd);
+}
+
+OpenFile
+Thread::RemoveOpenFile(int fd){
+    return openfiles->Remove(fd);
+}

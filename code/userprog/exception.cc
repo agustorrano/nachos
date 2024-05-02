@@ -26,9 +26,12 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
+#include "table.hh"
+#include "file_system.hh"
 
 #include <stdio.h>
 
+#define SIZE_MAX_FILE 1000
 
 static void
 IncrementPC()
@@ -101,17 +104,80 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
             }
-
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
+            if (!fileSystem->Create(filename, SIZE_MAX_FILE))
+                machine->WriteRegister(2, -1);
+            break;
+        }
+
+        case SC_REMOVE: { 
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            DEBUG('e', "`Remove` requested for file `%s`.\n", filename);
+            if (!fileSystem->Remove(filename))
+                machine->WriteRegister(2, -1);
+            else { machine->WriteRegister(2, 0); }
+            break; // tengo que hacer algo con la openfiles table?
+        }
+        
+        case SC_EXIT: {
+            
+        }
+
+        case SC_READ: {
+            // IMPLEMENTAR SYNCH CONSOLE
+        }
+
+        case SC_WRITE: {
+            // IMPLEMENTAR SYNCH CONSOLE
+        }
+
+        case SC_OPEN: {
+           int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+            }
+            DEBUG('e', "`Open` requested for file `%s`.\n", filename);
+            OpenFile openfile = fileSystem->Open(filename);
+            // if openfile == null then machine->WriteRegister(2, -1);
             break;
         }
 
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
             DEBUG('e', "`Close` requested for id %u.\n", fid);
+            OpenFile openfile  = currentThread->RemoveOpenFile(fid);
+            // sacamos el archivo de la lista de open files
             break;
         }
 
+    /*  case SC_JOIN:{
+
+        }
+        
+        case SC_EXEC: {
+
+        }
+    */
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
             ASSERT(false);
