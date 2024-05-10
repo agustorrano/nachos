@@ -26,10 +26,12 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
-#include "table.hh"
+#include "lib/table.hh"
 #include "file_system.hh"
+#include "machine/synch_console.hh"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SIZE_MAX_FILE 1000
 
@@ -96,6 +98,8 @@ SyscallHandler(ExceptionType _et)
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -103,10 +107,13 @@ SyscallHandler(ExceptionType _et)
                                     filename, sizeof filename)) {
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
             }
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
             if (!fileSystem->Create(filename, SIZE_MAX_FILE))
                 machine->WriteRegister(2, -1);
+            else { machine->WriteRegister(2, 0); }
             break;
         }
 
@@ -137,11 +144,63 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_READ: {
-            // IMPLEMENTAR SYNCH CONSOLE
+            int bufferAddr = machine->ReadRegister(4);
+            int sizeAddr = machine->ReadRegister(5);
+            // int fdAddr = machine->ReadRegister(6);
+            char size[SIZE_MAX_FILE];
+            if (!ReadStringFromUser(sizeAddr,
+                                    size, sizeof size)) {
+                DEBUG('e', "Error: ");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            int bufSize = atoi(size);
+            char buffer[bufSize];
+            // char fd[4];
+            // if (!ReadStringFromUser(fdAddr,
+            //                         fd, sizeof fd)) {
+            //     DEBUG('e', "Error: ");
+            //     machine->WriteRegister(2, -1);
+            //     break;
+            // }
+            int count = -1;
+            do {
+                count++;
+                buffer[count] = synchConsole->ReadChar();
+            }
+            while (count < bufSize && buffer[count] != EOF);
+            WriteBufferToUser(buffer, bufferAddr, count);
+            machine->WriteRegister(2, count);
         }
 
         case SC_WRITE: {
-            // IMPLEMENTAR SYNCH CONSOLE
+            int bufferAddr = machine->ReadRegister(4);
+            int sizeAddr = machine->ReadRegister(5);
+            // int fdAddr = machine->ReadRegister(6);
+            char size[SIZE_MAX_FILE];
+            if (!ReadStringFromUser(sizeAddr,
+                                    size, sizeof size)) {
+                DEBUG('e', "Error: ");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            int bufSize = atoi(size);
+            char buffer[bufSize];
+            ReadBufferFromUser(bufferAddr, buffer, bufSize);
+            // char fd[4];
+            // if (!ReadStringFromUser(fdAddr,
+            //                         fd, sizeof fd)) {
+            //     DEBUG('e', "Error: ");
+            //     machine->WriteRegister(2, -1);
+            //     break;
+            // }
+            int count = -1;
+            do {
+                count++;
+                synchConsole->WriteChar(buffer[count]);
+            }
+            while (count < bufSize);
+            machine->WriteRegister(2, count);
         }
 
         case SC_OPEN: {

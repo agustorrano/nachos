@@ -39,6 +39,7 @@ SynchDisk *synchDisk;
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
+SynchConsole *synchConsole;
 #endif
 
 // External definition, to allow us to take a pointer to this function.
@@ -192,6 +193,8 @@ Initialize(int argc, char **argv)
     
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     SetExceptionHandlers();
+
+    synchConsole = new SynchConsole(nullptr, nullptr);
 #endif
 
 #ifdef FILESYS
@@ -212,6 +215,7 @@ Cleanup()
 
 #ifdef USER_PROGRAM
     delete machine;
+    delete synchConsole;
 #endif
 
 #ifdef FILESYS_NEEDED

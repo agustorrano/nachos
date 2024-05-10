@@ -64,6 +64,6 @@ void WriteStringToUser(const char *string, int userAddress)
     do {
         int temp = (int) *string;
         ASSERT(machine->WriteMem(userAddress++, 1, temp));
-    } while (*string++ != '\n');
+    } while (*string++ != '\0');
     return;
 }

@@ -385,7 +385,6 @@ Thread::GetTable()
     return openfiles;
 }
 
-#endif
 int 
 Thread::AddOpenFile(OpenFile item){
     return openfiles->Add(item);
@@ -405,3 +404,4 @@ OpenFile
 Thread::RemoveOpenFile(int fd){
     return openfiles->Remove(fd);
 }
+#endif

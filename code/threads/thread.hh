@@ -189,7 +189,7 @@ private:
 public:
 
     //Table <OpenFile> *GetTable();
-    int AddOpenFile(T item);
+    // int AddOpenFile(T item);
     
     // Save user-level register state.
     void SaveUserState();
