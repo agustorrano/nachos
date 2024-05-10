@@ -47,8 +47,8 @@
 #endif
 
 #include "syscall.h"
-#include "table.hh"
-#include "file_system.hh"
+#include "lib/table.hh"
+#include "filesys/file_system.hh"
 #include <stdint.h>
 
 class Channel;
@@ -103,7 +103,7 @@ public:
     /// Initialize a `Thread`.
     Thread(const char *debugName, int join);
 
-    Thread(const char *debugName, int join, int threadPriority);
+    Thread(const char *debugName, int join, const unsigned int threadPriority);
 
     /// Deallocate a Thread.
     ///

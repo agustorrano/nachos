@@ -58,7 +58,7 @@ Thread::Thread(const char *threadName, int join)
 #endif
 }
 
-Thread::Thread(const char *threadName, int join, int threadPriority)
+Thread::Thread(const char *threadName, int join, const unsigned int threadPriority)
 {
     ASSERT(threadPriority < NUM_QUEUES);
     name     = threadName;
