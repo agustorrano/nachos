@@ -145,14 +145,6 @@ public:
 
     void RestorePriority();
 
-    int AddOpenFile(OpenFile item);
-
-    OpenFile GetOpenFile(int fd);
-
-    bool OpenFileExists(int fd);
-
-    OpenFile RemoveOpenFile(int fd);
-
 private:
     // Some of the private data for this class is listed above.
 
@@ -175,9 +167,11 @@ private:
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
-    Table<OpenFile> *openfiles;
 
 #ifdef USER_PROGRAM
+    
+    Table<OpenFile> *openfiles;
+
     /// User-level CPU register state.
     ///
     /// A thread running a user program actually has *two* sets of CPU
@@ -199,6 +193,14 @@ public:
 
     // User code this thread is running.
     AddressSpace *space;
+
+    int AddOpenFile(OpenFile item);
+
+    OpenFile GetOpenFile(int fd);
+
+    bool OpenFileExists(int fd);
+
+    OpenFile RemoveOpenFile(int fd);
 #endif
 };
 

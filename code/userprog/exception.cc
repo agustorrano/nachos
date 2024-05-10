@@ -145,7 +145,17 @@ SyscallHandler(ExceptionType _et)
 
         case SC_READ: {
             int bufferAddr = machine->ReadRegister(4);
+            if (bufferAddr == 0) {
+                DEBUG('e', "Error: address to buffer is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             int sizeAddr = machine->ReadRegister(5);
+            if (sizeAddr == 0) {
+                DEBUG('e', "Error: address to size buffer is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             // int fdAddr = machine->ReadRegister(6);
             char size[SIZE_MAX_FILE];
             if (!ReadStringFromUser(sizeAddr,
@@ -175,7 +185,17 @@ SyscallHandler(ExceptionType _et)
 
         case SC_WRITE: {
             int bufferAddr = machine->ReadRegister(4);
+            if (bufferAddr == 0) {
+                DEBUG('e', "Error: address to buffer is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             int sizeAddr = machine->ReadRegister(5);
+            if (sizeAddr == 0) {
+                DEBUG('e', "Error: address to size buffer is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             // int fdAddr = machine->ReadRegister(6);
             char size[SIZE_MAX_FILE];
             if (!ReadStringFromUser(sizeAddr,
