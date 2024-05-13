@@ -27,7 +27,7 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "lib/table.hh"
-#include "file_system.hh"
+#include "filesys/file_system.hh"
 #include "machine/synch_console.hh"
 
 #include <stdio.h>
@@ -192,7 +192,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             else { // lee de un archivo
-                Openfile openfile = currentThread->GetOpenFile(fd);
+                OpenFile* openfile = currentThread->GetOpenFile(fd);
                 openfile->Read(buffer, (unsigned) bufSize);
             }
         }
@@ -250,7 +250,7 @@ SyscallHandler(ExceptionType _et)
             }
             else {
                 // escribe en un archivo
-                Openfile openfile = currentThread->GetOpenFile(fd);
+                OpenFile* openfile = currentThread->GetOpenFile(fd);
                 openfile->Write(buffer, (unsigned) bufSize);
             }
         }
@@ -268,7 +268,8 @@ SyscallHandler(ExceptionType _et)
                       FILE_NAME_MAX_LEN);
             }
             DEBUG('e', "`Open` requested for file `%s`.\n", filename);
-            OpenFile openfile = fileSystem->Open(filename);
+            OpenFile* openfile = fileSystem->Open(filename);
+            currentThread->AddOpenFile(openfile);
             // if openfile == null then machine->WriteRegister(2, -1);
             break;
         }
@@ -276,8 +277,9 @@ SyscallHandler(ExceptionType _et)
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
             DEBUG('e', "`Close` requested for id %u.\n", fid);
-            OpenFile openfile  = currentThread->RemoveOpenFile(fid);
+            OpenFile* openfile  = currentThread->RemoveOpenFile(fid);
             // sacamos el archivo de la lista de open files
+            delete openfile; // esto esta bien?
             break;
         }
 

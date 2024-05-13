@@ -55,7 +55,7 @@ Thread::Thread(const char *threadName, int join)
 
 #ifdef USER_PROGRAM
     space    = nullptr;
-    openfiles = new Table<OpenFile*>
+    openfiles = new Table<OpenFile*>;
     this->AddOpenFile(nullptr); // fd 0 used for stdin in console
     this->AddOpenFile(nullptr); // fd 1 used for stdout in console
 #endif
@@ -76,6 +76,9 @@ Thread::Thread(const char *threadName, int join, const unsigned int threadPriori
 
 #ifdef USER_PROGRAM
     space    = nullptr;
+    openfiles = new Table<OpenFile*>;
+    this->AddOpenFile(nullptr); // fd 0 used for stdin in console
+    this->AddOpenFile(nullptr); // fd 1 used for stdout in console
 #endif
 }
 
@@ -96,6 +99,10 @@ Thread::~Thread()
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);
     }
+#ifdef USER_PROGRAM
+    // borrar tabla de openfiles. cerrar archivos? crear funcion destroy?
+    delete openfiles;
+#endif
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
@@ -382,18 +389,12 @@ Thread::RestoreUserState()
     }
 }
 
-Table<OpenFile>* 
-Thread::GetTable() 
-{        
-    return openfiles;
-}
-
 int 
-Thread::AddOpenFile(OpenFile item){
+Thread::AddOpenFile(OpenFile* item){
     return openfiles->Add(item);
 }
 
-OpenFile
+OpenFile*
 Thread::GetOpenFile(int fd){
     return openfiles->Get(fd);
 }
@@ -403,7 +404,7 @@ Thread::OpenFileExists(int fd) {
     return openfiles->HasKey(fd);
 }
 
-OpenFile
+OpenFile*
 Thread::RemoveOpenFile(int fd){
     return openfiles->Remove(fd);
 }

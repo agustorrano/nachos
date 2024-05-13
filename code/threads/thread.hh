@@ -170,7 +170,7 @@ private:
 
 #ifdef USER_PROGRAM
     
-    Table<OpenFile> *openfiles;
+    Table<OpenFile*> *openfiles;
 
     /// User-level CPU register state.
     ///
@@ -181,9 +181,6 @@ private:
     
 
 public:
-
-    //Table <OpenFile> *GetTable();
-    // int AddOpenFile(T item);
     
     // Save user-level register state.
     void SaveUserState();
@@ -194,13 +191,13 @@ public:
     // User code this thread is running.
     AddressSpace *space;
 
-    int AddOpenFile(OpenFile item);
+    int AddOpenFile(OpenFile* item);
 
-    OpenFile GetOpenFile(int fd);
+    OpenFile* GetOpenFile(int fd);
 
     bool OpenFileExists(int fd);
 
-    OpenFile RemoveOpenFile(int fd);
+    OpenFile* RemoveOpenFile(int fd);
 #endif
 };
 
