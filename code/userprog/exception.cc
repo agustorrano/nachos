@@ -89,10 +89,11 @@ SyscallHandler(ExceptionType _et)
 
     switch (scid) {
 
-        case SC_HALT:
+        case SC_HALT: {
             DEBUG('e', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
             break;
+        }
 
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
@@ -117,7 +118,7 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
-        case SC_REMOVE: { 
+        case SC_REMOVE: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
@@ -138,12 +139,9 @@ SyscallHandler(ExceptionType _et)
             else { machine->WriteRegister(2, 0); }
             break; // tengo que hacer algo con la openfiles table?
         }
-        
-        case SC_EXIT: {
-            
-        }
-
+    
         case SC_READ: {
+            // accede a los registros
             int bufferAddr = machine->ReadRegister(4);
             if (bufferAddr == 0) {
                 DEBUG('e', "Error: address to buffer is null.\n");
@@ -156,7 +154,14 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            // int fdAddr = machine->ReadRegister(6);
+            int fdAddr = machine->ReadRegister(6);
+            if (fdAddr == 0) {
+                DEBUG('e', "Error: address to fd is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            // lee de la consola o archivos
             char size[SIZE_MAX_FILE];
             if (!ReadStringFromUser(sizeAddr,
                                     size, sizeof size)) {
@@ -164,26 +169,36 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
+            char fdBuf[4];
+            if (!ReadStringFromUser(fdAddr,
+                                    fdBuf, sizeof fdBuf)) {
+                DEBUG('e', "Error: ");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             int bufSize = atoi(size);
             char buffer[bufSize];
-            // char fd[4];
-            // if (!ReadStringFromUser(fdAddr,
-            //                         fd, sizeof fd)) {
-            //     DEBUG('e', "Error: ");
-            //     machine->WriteRegister(2, -1);
-            //     break;
-            // }
-            int count = -1;
-            do {
-                count++;
-                buffer[count] = synchConsole->ReadChar();
+            int fd = atoi(fdBuf);
+            if (fd == 1) {;} // error, es stdout
+            if (fd == 0) { // lee de la consola
+                int count = -1;
+                do {
+                    count++;
+                    buffer[count] = synchConsole->ReadChar();
+                }
+                while (count < bufSize && buffer[count] != EOF);
+                WriteBufferToUser(buffer, bufferAddr, count);
+                machine->WriteRegister(2, count);
+                break;
             }
-            while (count < bufSize && buffer[count] != EOF);
-            WriteBufferToUser(buffer, bufferAddr, count);
-            machine->WriteRegister(2, count);
+            else { // lee de un archivo
+                Openfile openfile = currentThread->GetOpenFile(fd);
+                openfile->Read(buffer, (unsigned) bufSize);
+            }
         }
 
         case SC_WRITE: {
+            // accede a los registros
             int bufferAddr = machine->ReadRegister(4);
             if (bufferAddr == 0) {
                 DEBUG('e', "Error: address to buffer is null.\n");
@@ -196,7 +211,14 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            // int fdAddr = machine->ReadRegister(6);
+            int fdAddr = machine->ReadRegister(6);
+            if (fdAddr == 0) {
+                DEBUG('e', "Error: address to fd is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            // escribe en la consola o archivos
             char size[SIZE_MAX_FILE];
             if (!ReadStringFromUser(sizeAddr,
                                     size, sizeof size)) {
@@ -207,20 +229,30 @@ SyscallHandler(ExceptionType _et)
             int bufSize = atoi(size);
             char buffer[bufSize];
             ReadBufferFromUser(bufferAddr, buffer, bufSize);
-            // char fd[4];
-            // if (!ReadStringFromUser(fdAddr,
-            //                         fd, sizeof fd)) {
-            //     DEBUG('e', "Error: ");
-            //     machine->WriteRegister(2, -1);
-            //     break;
-            // }
-            int count = -1;
-            do {
-                count++;
-                synchConsole->WriteChar(buffer[count]);
+            char fdBuf[4];
+            if (!ReadStringFromUser(fdAddr,
+                                    fdBuf, sizeof fdBuf)) {
+                DEBUG('e', "Error: ");
+                machine->WriteRegister(2, -1);
+                break;
             }
-            while (count < bufSize);
-            machine->WriteRegister(2, count);
+            int fd = atoi(fdBuf);
+            if (fd == 0) {;} // error, es stdin
+            if (fd == 1) { // escribe en la consola
+                int count = -1;
+                do {
+                    count++;
+                    synchConsole->WriteChar(buffer[count]);
+                }
+                while (count < bufSize);
+                machine->WriteRegister(2, count);
+                break;
+            }
+            else {
+                // escribe en un archivo
+                Openfile openfile = currentThread->GetOpenFile(fd);
+                openfile->Write(buffer, (unsigned) bufSize);
+            }
         }
 
         case SC_OPEN: {
@@ -256,6 +288,11 @@ SyscallHandler(ExceptionType _et)
         case SC_EXEC: {
 
         }
+        
+        case SC_EXIT: {
+            
+        }
+
     */
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);

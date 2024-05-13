@@ -56,6 +56,8 @@ Thread::Thread(const char *threadName, int join)
 #ifdef USER_PROGRAM
     space    = nullptr;
     openfiles = new Table<OpenFile*>
+    this->AddOpenFile(nullptr); // fd 0 used for stdin in console
+    this->AddOpenFile(nullptr); // fd 1 used for stdout in console
 #endif
 }
 
