@@ -22,7 +22,7 @@ SynchConsole::SynchConsole(const char *readFile, const char *writeFile)
     writeDone = new Semaphore("write done", 0);
     readLock = new Lock("synch console read lock");
     writeLock = new Lock("synch console write lock");
-    console = new Console(readFile, writeFile, ConsoleReadAvail, ConsoleWriteDone, 0);
+    console = new Console(readFile, writeFile, ConsoleReadAvail, ConsoleWriteDone, this);
 }
 
 SynchConsole::~SynchConsole()
@@ -47,8 +47,8 @@ char
 SynchConsole::ReadChar()
 {
     readLock->Acquire();
-    char ret = console->GetChar();
     readAvail->P();
+    char ret = console->GetChar();
     readLock->Release();
     return ret;
 }

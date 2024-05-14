@@ -10,14 +10,15 @@
 
 
 #include "syscall.h"
-
+//#include "lib/debug.hh"
 
 int
 main(void)
 {
     Create("test.txt");
     OpenFileId o = Open("test.txt");
-    Write("Hello world\n",12,o);
-    Close(o);
+    Remove("test.txt");
+    Create("test2.txt");
+    OpenFileId o2 = Open("test2.txt");
     return 0;
 }
