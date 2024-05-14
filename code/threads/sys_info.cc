@@ -6,6 +6,11 @@
 
 #include <stdio.h>
 
+#ifdef USER_PROGRAM
+#include "system.hh"
+#else
+#include "machine/mmu.hh"
+#endif
 
 void SysInfo()
 {
@@ -44,12 +49,21 @@ General:\n\
   Nachos release: %s %s.\n\
   Option definitions: %s\n",
       PROGRAM, VERSION, OPTIONS);
+#ifdef USER_PROGRAM
+    printf("\n\
+Memory:\n\
+  Page size: %u bytes.\n\
+  Number of pages: %u.\n\
+  Number of TLB entries: %u.\n\
+  Memory size: %u bytes.\n", PAGE_SIZE, machine->GetNumPhysicalPages(), TLB_SIZE, machine->GetNumPhysicalPages() * PAGE_SIZE);
+#else
     printf("\n\
 Memory:\n\
   Page size: %u bytes.\n\
   Number of pages: %u.\n\
   Number of TLB entries: %u.\n\
   Memory size: %u bytes.\n", PAGE_SIZE, DEFAULT_NUM_PHYS_PAGES, TLB_SIZE, DEFAULT_NUM_PHYS_PAGES * PAGE_SIZE);
+#endif
     printf("\n\
 Disk:\n\
   Sector size: %u bytes.\n\
