@@ -112,8 +112,10 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
-            if (!fileSystem->Create(filename, SIZE_MAX_FILE))
+            if (!fileSystem->Create(filename, SIZE_MAX_FILE)) {
+                DEBUG('e', "Error: could not create file.\n");
                 machine->WriteRegister(2, -1);
+            }
             else { machine->WriteRegister(2, 0); }
             break;
         }
@@ -134,10 +136,12 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Remove` requested for file `%s`.\n", filename);
-            if (!fileSystem->Remove(filename))
+            if (!fileSystem->Remove(filename)) {
+                DEBUG('e', "Error: could not remove file.\n");
                 machine->WriteRegister(2, -1);
+            }
             else { machine->WriteRegister(2, 0); }
-            break; // tengo que hacer algo con la openfiles table?
+            break;
         }
     
         case SC_READ: {
@@ -148,52 +152,47 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            int sizeAddr = machine->ReadRegister(5);
-            if (sizeAddr == 0) {
-                DEBUG('e', "Error: address to size buffer is null.\n");
+            int size = machine->ReadRegister(5);
+            if (size < 0) {
+                DEBUG('e', "Error: negative size.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
-            int fdAddr = machine->ReadRegister(6);
-            if (fdAddr == 0) {
-                DEBUG('e', "Error: address to fd is null.\n");
+            OpenFileId fd = machine->ReadRegister(6);
+            if (fd < 0) {
+                DEBUG('e', "Error: negative fd.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
 
-            // lee de la consola o archivos
-            char size[SIZE_MAX_FILE];
-            if (!ReadStringFromUser(sizeAddr,
-                                    size, sizeof size)) {
-                DEBUG('e', "Error: ");
+            char buffer[size];
+            if (fd == CONSOLE_OUTPUT) {
+                DEBUG('e', "Error: reading from stdout.\n");
                 machine->WriteRegister(2, -1);
                 break;
-            }
-            char fdBuf[4];
-            if (!ReadStringFromUser(fdAddr,
-                                    fdBuf, sizeof fdBuf)) {
-                DEBUG('e', "Error: ");
-                machine->WriteRegister(2, -1);
-                break;
-            }
-            int bufSize = atoi(size);
-            char buffer[bufSize];
-            int fd = atoi(fdBuf);
-            if (fd == 1) {;} // error, es stdout
-            if (fd == 0) { // lee de la consola
-                int count = -1;
-                do {
-                    count++;
+            } 
+            if (fd == CONSOLE_INPUT) { // lee de la consola
+                DEBUG('e', "`Read` requested for console.\n");
+                int count = 0;
+                while (count < size) {
                     buffer[count] = synchConsole->ReadChar();
+                    count++;
                 }
-                while (count < bufSize && buffer[count] != EOF);
-                WriteBufferToUser(buffer, bufferAddr, count);
+                WriteBufferToUser(buffer, bufferAddr, size);
                 machine->WriteRegister(2, count);
                 break;
             }
             else { // lee de un archivo
+                DEBUG('e', "`Read` requested for fd `%d`.\n", fd);
                 OpenFile* openfile = currentThread->GetOpenFile(fd);
-                openfile->Read(buffer, (unsigned) bufSize);
+                if (openfile == nullptr) {
+                    DEBUG('e', "Error: file is not open.\n");
+                    machine->WriteRegister(2, -1);
+                    break; 
+                }
+                int count = openfile->Read(buffer, (unsigned) size);
+                machine->WriteRegister(2, count);
+                break;
             }
         }
 
@@ -205,53 +204,47 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            int sizeAddr = machine->ReadRegister(5);
-            if (sizeAddr == 0) {
-                DEBUG('e', "Error: address to size buffer is null.\n");
+            int size = machine->ReadRegister(5);
+            if (size < 0) {
+                DEBUG('e', "Error: negative size.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
-            int fdAddr = machine->ReadRegister(6);
-            if (fdAddr == 0) {
-                DEBUG('e', "Error: address to fd is null.\n");
+            OpenFileId fd = machine->ReadRegister(6);
+            if (fd < 0) {
+                DEBUG('e', "Error: negative fd.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
-            
-            // escribe en la consola o archivos
-            char size[SIZE_MAX_FILE];
-            if (!ReadStringFromUser(sizeAddr,
-                                    size, sizeof size)) {
-                DEBUG('e', "Error: ");
+
+            char buffer[size+1];
+            ReadBufferFromUser(bufferAddr, buffer, sizeof buffer);
+            if (fd == CONSOLE_INPUT) {
+                DEBUG('e', "Error: writing in stdin.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
-            int bufSize = atoi(size);
-            char buffer[bufSize];
-            ReadBufferFromUser(bufferAddr, buffer, bufSize);
-            char fdBuf[4];
-            if (!ReadStringFromUser(fdAddr,
-                                    fdBuf, sizeof fdBuf)) {
-                DEBUG('e', "Error: ");
-                machine->WriteRegister(2, -1);
-                break;
-            }
-            int fd = atoi(fdBuf);
-            if (fd == 0) {;} // error, es stdin
-            if (fd == 1) { // escribe en la consola
+            if (fd == CONSOLE_OUTPUT) { // escribe en la consola
+                DEBUG('e', "`Write` requested for console.\n");
                 int count = -1;
                 do {
                     count++;
                     synchConsole->WriteChar(buffer[count]);
-                }
-                while (count < bufSize);
+                } while (count < size);
                 machine->WriteRegister(2, count);
                 break;
             }
-            else {
-                // escribe en un archivo
+            else {  // escribe en un archivo
+                DEBUG('e', "`Write` requested for fd `%d`.\n", fd);
                 OpenFile* openfile = currentThread->GetOpenFile(fd);
-                openfile->Write(buffer, (unsigned) bufSize);
+                if (openfile == nullptr) {
+                    DEBUG('e', "Error: file is not open.\n");
+                    machine->WriteRegister(2, -1);
+                    break; 
+                }
+                int count = openfile->Write(buffer, (unsigned) size);
+                machine->WriteRegister(2, count);
+                break;
             }
         }
 
@@ -259,6 +252,8 @@ SyscallHandler(ExceptionType _et)
            int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -266,36 +261,51 @@ SyscallHandler(ExceptionType _et)
                                     filename, sizeof filename)) {
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
             }
             DEBUG('e', "`Open` requested for file `%s`.\n", filename);
             OpenFile* openfile = fileSystem->Open(filename);
-            currentThread->AddOpenFile(openfile);
-            // if openfile == null then machine->WriteRegister(2, -1);
+            if (openfile == nullptr) {
+                DEBUG('e', "Error: could not open the file.\n");
+                machine->WriteRegister(2, -1);
+                break; 
+            }
+            OpenFileId fd = currentThread->AddOpenFile(openfile);
+            DEBUG('e', "fd: %d.\n", fd);
+            machine->WriteRegister(2, fd);
             break;
         }
 
         case SC_CLOSE: {
-            int fid = machine->ReadRegister(4);
-            DEBUG('e', "`Close` requested for id %u.\n", fid);
-            OpenFile* openfile  = currentThread->RemoveOpenFile(fid);
-            // sacamos el archivo de la lista de open files
-            delete openfile; // esto esta bien?
+            OpenFileId fd = machine->ReadRegister(4);
+            if (fd < 0) {
+                DEBUG('e', "Error: negative fd.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            DEBUG('e', "`Close` requested for id %d.\n", fd);
+            // sacamos el archivo de la lista de openfiles (si está)
+            OpenFile* openfile  = currentThread->RemoveOpenFile(fd);
+            delete openfile; 
+            machine->WriteRegister(2, 0);
             break;
         }
 
-    /*  case SC_JOIN:{
-
+        case SC_JOIN:{
+            DEBUG('e', "`Join` requested.\n");
+            break;
         }
         
         case SC_EXEC: {
-
+            DEBUG('e', "`Exec` requested.\n");
+            break;
         }
-        
-        case SC_EXIT: {
             
+        case SC_EXIT: {
+            DEBUG('e', "`Exit` requested.\n");
+            break;
         }
-
-    */
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
             ASSERT(false);
