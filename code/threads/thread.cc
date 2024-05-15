@@ -102,7 +102,15 @@ Thread::~Thread()
                                        STACK_SIZE * sizeof *stack);
     }
 #ifdef USER_PROGRAM
-    // borrar tabla de openfiles. cerrar archivos? crear funcion destroy?
+    // destruir tabla de openfiles.
+    int top = openfiles->SIZE;
+    int base = 2; // 0 y 1 para consola
+    for (int i = base; i < top; i++) {
+        if (this->OpenFileExists(i)){
+            OpenFile* op = this->RemoveOpenFile(i);
+            delete op;
+        }
+    }
     delete openfiles;
 #endif
 }

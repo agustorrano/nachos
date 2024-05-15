@@ -272,7 +272,6 @@ SyscallHandler(ExceptionType _et)
                 break; 
             }
             OpenFileId fd = currentThread->AddOpenFile(openfile);
-            DEBUG('e', "fd: %d.\n", fd);
             machine->WriteRegister(2, fd);
             break;
         }
@@ -284,7 +283,7 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            DEBUG('e', "`Close` requested for id %d.\n", fd);
+            DEBUG('e', "`Close` requested for fd %d.\n", fd);
             // sacamos el archivo de la lista de openfiles (si está)
             OpenFile* openfile  = currentThread->RemoveOpenFile(fd);
             delete openfile; 
