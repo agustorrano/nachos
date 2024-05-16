@@ -10,15 +10,16 @@
 
 
 #include "syscall.h"
-//#include "lib/debug.hh"
 
 int
 main(void)
 {
-    Create("test.txt");
-    OpenFileId o = Open("test.txt");
-    Write("Hello world\n",12,o);
-    Close(o);
+    //Create("test.txt");
+    //OpenFileId o = Open("test.txt");
+    //Write("Hello world\n",12,o);
+    //Close(o);
+    SpaceId x = Exec("touch");
+    Join(x);
     return 0;
 }
 

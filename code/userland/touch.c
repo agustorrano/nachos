@@ -2,7 +2,7 @@
 
 #include "syscall.h"
 
-#define ARGC_ERROR    "Error: missing argument."
+/* #define ARGC_ERROR    "Error: missing argument."
 #define CREATE_ERROR  "Error: could not create file."
 
 int
@@ -21,4 +21,12 @@ main(int argc, char *argv[])
         }
     }
     return !success;
+} */
+
+int main() {
+    Create("test.txt");
+    OpenFileId o = Open("test.txt");
+    Write("Hello world\n",12,o);
+    Close(o);
+    return 0;
 }

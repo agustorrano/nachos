@@ -82,6 +82,13 @@ DefaultHandler(ExceptionType et)
 ///
 /// And do not forget to increment the program counter before returning. (Or
 /// else you will loop making the same system call forever!)
+static void DummyExec(void* arg) {
+    //Machine *machinee = (Machine*) arg;
+    currentThread->space->InitRegisters(); 
+    currentThread->space->RestoreState(); 
+    machine->Run();
+}
+
 static void
 SyscallHandler(ExceptionType _et)
 {
@@ -292,18 +299,17 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_JOIN:{
-            SpaceId spaceid = machine->ReadRegister(4);
-            if (spaceid < 0) {
+            SpaceId sid = machine->ReadRegister(4);
+            if (sid < 0) {
                 DEBUG('e', "Error: negative pid.\n");
                 machine->WriteRegister(2, -1);
                 break;
             }
-            //definir thread con el pid (que devuelve exec)
-            //para ello, crear globalmente una tabla que asigna a cada
-            //AddSpace un int (SpaceId) que sera el que devuelve exec y el que
-            //recibe join, y de alguna forma asociarlo con el thread.
             DEBUG('e', "`Join` requested.\n");
-            //thread->Join();
+            Thread* t = threadsTable->Get(sid);
+            int* st = new int;
+            t->Join(st);
+            machine->WriteRegister(2, *st);
             break;
         }
         
@@ -325,7 +331,7 @@ SyscallHandler(ExceptionType _et)
             }
             DEBUG('e', "`Exec` requested.\n");
             // crear un nuevo hilo
-            Thread *newProc = new Thread("name", 0, currentThread->GetPriority());
+            Thread *newProc = new Thread("child", 1, currentThread->GetPriority());
             
             // crear su AddressSpace
             OpenFile *executable = fileSystem->Open(filename);
@@ -338,17 +344,14 @@ SyscallHandler(ExceptionType _et)
 
             delete executable;
 
-            space->InitRegisters(); 
-            space->RestoreState(); 
-
-            SpaceId sid = spaceIdTable->Add(space);
+            SpaceId sid = threadsTable->Add(newProc);
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
                 machine->WriteRegister(2, -1);
             }
-            
             machine->WriteRegister(2, sid);
-            newProc->Fork(machine->Run(), NULL);
+
+            newProc->Fork(DummyExec, NULL);
             break;
         }
             
@@ -370,7 +373,6 @@ SyscallHandler(ExceptionType _et)
 
     IncrementPC();
 }
-
 
 
 /// By default, only system calls have their own handler.  All other

@@ -40,7 +40,7 @@ SynchDisk *synchDisk;
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole;
-Table <AddressSpace*> *spaceIdTable;
+Table <Thread*> *threadsTable;
 
 #endif
 
@@ -198,7 +198,7 @@ Initialize(int argc, char **argv)
 
     synchConsole = new SynchConsole(nullptr, nullptr);
 
-    spaceIdTable = new Table<AddressSpace*>;
+    threadsTable = new Table<Thread*>;
 
 #endif
 
@@ -221,7 +221,7 @@ Cleanup()
 #ifdef USER_PROGRAM
     delete machine;
     delete synchConsole;
-    delete spaceIdTable;
+    delete threadsTable;
 #endif
 
 #ifdef FILESYS_NEEDED

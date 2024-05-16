@@ -119,6 +119,8 @@ public:
     // Current thread blocks until thread finishes
     void Join();
 
+    void Join(int* statusOut);
+
     /// Relinquish the CPU if any other thread is runnable.
     void Yield();
 

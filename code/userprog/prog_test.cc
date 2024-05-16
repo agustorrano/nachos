@@ -30,7 +30,6 @@ StartProcess(const char *filename)
         printf("Unable to open file %s\n", filename);
         return;
     }
-
     AddressSpace *space = new AddressSpace(executable);
     currentThread->space = space;
 

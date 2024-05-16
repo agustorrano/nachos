@@ -155,11 +155,22 @@ Thread::Join()
 
     DEBUG('t', "Joining thread \"%s\".\n", name);
 
-    int* status = new int;
-    channel->Receive(status);
-    DEBUG('t', "Thread joined \"%s\" with status %d.\n", name, *status);
+    int* buffer = new int;
+    channel->Receive(buffer);
+    DEBUG('t', "Thread joined \"%s\".\n", name);
 }
 
+void 
+Thread::Join(int* statusOut) 
+{
+    ASSERT(this != currentThread);
+    ASSERT(allowJoin);
+
+    DEBUG('t', "Joining thread \"%s\".\n", name);
+
+    channel->Receive(statusOut);
+    DEBUG('t', "Thread \"%s\" joined with status \"%d\".\n", name, *statusOut);
+}
 /// Check a thread's stack to see if it has overrun the space that has been
 /// allocated for it.  If we had a smarter compiler, we would not need to
 /// worry about this, but we do not.
@@ -253,7 +264,7 @@ Thread::Finish()
 }
 
 void
-Thread::Finish(int status)
+Thread::Finish(int st)
 {
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
@@ -261,7 +272,7 @@ Thread::Finish(int status)
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
     if (allowJoin)
-        channel->Send(status); // Father returned from Join
+        channel->Send(st); // Father returned from Join
     
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
