@@ -153,11 +153,11 @@ Thread::Join()
     ASSERT(this != currentThread);
     ASSERT(allowJoin);
 
-    DEBUG('t', "Joining thread \"%s\"\n", name);
+    DEBUG('t', "Joining thread \"%s\".\n", name);
 
-    int* buffer = new int;
-    channel->Receive(buffer);
-    DEBUG('t', "Thread joined \"%s\"\n", name);
+    int* status = new int;
+    channel->Receive(status);
+    DEBUG('t', "Thread joined \"%s\" with status %d.\n", name, *status);
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -246,6 +246,22 @@ Thread::Finish()
 
     if (allowJoin)
         channel->Send(1); // Father returned from Join
+    
+    threadToBeDestroyed = currentThread;
+    Sleep();  // Invokes `SWITCH`.
+    // Not reached.
+}
+
+void
+Thread::Finish(int status)
+{
+    interrupt->SetLevel(INT_OFF);
+    ASSERT(this == currentThread);
+
+    DEBUG('t', "Finishing thread \"%s\"\n", GetName());
+
+    if (allowJoin)
+        channel->Send(status); // Father returned from Join
     
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.

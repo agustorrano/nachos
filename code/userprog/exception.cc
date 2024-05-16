@@ -29,8 +29,7 @@
 #include "lib/table.hh"
 #include "filesys/file_system.hh"
 #include "machine/synch_console.hh"
-#include "machine.hh"
-Machine *machine;
+#include "address_space.hh"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -293,18 +292,18 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_JOIN:{
-            //int pid = machine->ReadRegister(4);
-            //if (pid < 0) {
-            //    DEBUG('e', "Error: negative pid.\n");
-            //    machine->WriteRegister(2, -1);
-            //    break;
-            //}
+            SpaceId spaceid = machine->ReadRegister(4);
+            if (spaceid < 0) {
+                DEBUG('e', "Error: negative pid.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
             //definir thread con el pid (que devuelve exec)
             //para ello, crear globalmente una tabla que asigna a cada
             //AddSpace un int (SpaceId) que sera el que devuelve exec y el que
             //recibe join, y de alguna forma asociarlo con el thread.
-            //thread->Join();
             DEBUG('e', "`Join` requested.\n");
+            //thread->Join();
             break;
         }
         
@@ -327,9 +326,29 @@ SyscallHandler(ExceptionType _et)
             DEBUG('e', "`Exec` requested.\n");
             // crear un nuevo hilo
             Thread *newProc = new Thread("name", 0, currentThread->GetPriority());
-            newProc->Fork(filename, NULL);
+            
             // crear su AddressSpace
+            OpenFile *executable = fileSystem->Open(filename);
+            if (executable == nullptr) {
+                printf("Unable to open file %s\n", filename);
+                return;
+            }
+            AddressSpace *space = new AddressSpace(executable);
+            newProc->space = space;
 
+            delete executable;
+
+            space->InitRegisters(); 
+            space->RestoreState(); 
+
+            SpaceId sid = spaceIdTable->Add(space);
+            if (sid == -1) {
+                DEBUG('e', "Error: too many processes.\n");
+                machine->WriteRegister(2, -1);
+            }
+            
+            machine->WriteRegister(2, sid);
+            newProc->Fork(machine->Run(), NULL);
             break;
         }
             
@@ -340,7 +359,7 @@ SyscallHandler(ExceptionType _et)
             int numPhysPages = machine->GetNumPhysicalPages();
             for (int i = 0; i < numPhysPages; i++)
                 machine->freeMap->Clear(i);
-            // como devolvemos el status?
+            currentThread->Finish(status);
             break;
         }
         default:
@@ -351,6 +370,7 @@ SyscallHandler(ExceptionType _et)
 
     IncrementPC();
 }
+
 
 
 /// By default, only system calls have their own handler.  All other
