@@ -25,7 +25,7 @@
 #include "mmu.hh"
 #include "single_stepper.hh"
 #include "lib/utility.hh"
-
+#include "lib/bitmap.hh"
 
 // User program CPU state.  The full set of MIPS registers, plus a few
 // more because we need to be able to start/stop a user program between
@@ -125,7 +125,8 @@ public:
                        ///< code and data, while executing.
 
     unsigned GetNumPhysicalPages();
-
+    
+    Bitmap  *freeMap;
 private:
     SingleStepper *singleStepper;  ///< Drop back into the method of a
                                    ///< provided object (may be a debugger)

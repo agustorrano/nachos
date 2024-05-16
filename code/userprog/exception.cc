@@ -29,7 +29,8 @@
 #include "lib/table.hh"
 #include "filesys/file_system.hh"
 #include "machine/synch_console.hh"
-
+#include "machine.hh"
+Machine *machine;
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -249,7 +250,7 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_OPEN: {
-           int filenameAddr = machine->ReadRegister(4);
+            int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
@@ -292,17 +293,54 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_JOIN:{
+            //int pid = machine->ReadRegister(4);
+            //if (pid < 0) {
+            //    DEBUG('e', "Error: negative pid.\n");
+            //    machine->WriteRegister(2, -1);
+            //    break;
+            //}
+            //definir thread con el pid (que devuelve exec)
+            //para ello, crear globalmente una tabla que asigna a cada
+            //AddSpace un int (SpaceId) que sera el que devuelve exec y el que
+            //recibe join, y de alguna forma asociarlo con el thread.
+            //thread->Join();
             DEBUG('e', "`Join` requested.\n");
             break;
         }
         
         case SC_EXEC: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
             DEBUG('e', "`Exec` requested.\n");
+            // crear un nuevo hilo
+            Thread *newProc = new Thread("name", 0, currentThread->GetPriority());
+            newProc->Fork(filename, NULL);
+            // crear su AddressSpace
+
             break;
         }
             
         case SC_EXIT: {
-            DEBUG('e', "`Exit` requested.\n");
+            int status = machine->ReadRegister(4);
+            DEBUG('e', "`Exit` requested with status %d.\n", status);
+            // liberamos la memoria del mapa de bits
+            int numPhysPages = machine->GetNumPhysicalPages();
+            for (int i = 0; i < numPhysPages; i++)
+                machine->freeMap->Clear(i);
+            // como devolvemos el status?
             break;
         }
         default:

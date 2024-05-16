@@ -29,7 +29,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
       // We need to increase the size to leave room for the stack.
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
-
+  
+    // ASSERT(numPages <= machine->freeMap->CountClear());
     ASSERT(numPages <= machine->GetNumPhysicalPages());
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
@@ -42,7 +43,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-          // For now, virtual page number = physical page number.
+        //pageTable[i].physicalPage = machine->freeMap->Find();
+        //if (pageTable[i].physicalPage == -1) 
+        //  DEBUG('e', "Error"); // deberia ser un assert ?
+          
+        // For now, virtual page number = physical page number.
         pageTable[i].physicalPage = i;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
@@ -56,8 +61,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     // Zero out the entire address space, to zero the unitialized data
     // segment and the stack segment.
+    //
+    //for (unsigned i = 0; i < numPages; i++) 
+    //  memset(mainMemory + pageTable[i].physicalPage, 0, 1);
+    //puede mejorarse, en realidad solo es necesario de stack y uninitdata
     memset(mainMemory, 0, size);
-
     // Then, copy in the code and data segments into memory.
     uint32_t codeSize = exe.GetCodeSize();
     uint32_t initDataSize = exe.GetInitDataSize();
