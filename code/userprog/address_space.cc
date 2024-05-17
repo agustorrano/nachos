@@ -25,15 +25,15 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     ASSERT(exe.CheckMagic());
 
     // How big is address space?
-
     unsigned size = exe.GetSize() + USER_STACK_SIZE;
 
     // We need to increase the size to leave room for the stack.
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
-  
+
+    DEBUG('e', "numPages = %u, freeMap = %u.\n", numPages, machine->freeMap->CountClear());
     ASSERT(numPages <= machine->freeMap->CountClear());
-    //ASSERT(numPages <= machine->GetNumPhysicalPages());
+    // ASSERT(numPages <= machine->GetNumPhysicalPages());
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
 
@@ -46,8 +46,10 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
         int x = machine->freeMap->Find();
-        if (x == -1)
-          DEBUG('e', "Error"); // deberia ser un assert ?
+        if (x == -1) {
+            DEBUG('a', "Error: there are no free physical pages.\n");
+            break;
+        }
         else
             pageTable[i].physicalPage = x;
         // For now, virtual page number = physical page number.
@@ -104,6 +106,9 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    // for (unsigned i = 0; i < numPages; i++) {
+    //     machine->freeMap->Clear(pageTable[i].physicalPage);
+    // }
     delete [] pageTable;
 }
 

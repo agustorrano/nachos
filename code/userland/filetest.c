@@ -18,7 +18,7 @@ main(void)
     //OpenFileId o = Open("test.txt");
     //Write("Hello world\n",12,o);
     //Close(o);
-    SpaceId x = Exec("touch");
+    int x = Exec("touch");
     Join(x);
     return 0;
 }

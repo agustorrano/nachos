@@ -66,6 +66,13 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+static void DummyExec(void* arg) {
+    currentThread->space->InitRegisters(); 
+    currentThread->space->RestoreState(); 
+    machine->Run();
+    ASSERT(false);
+}
+
 /// Handle a system call exception.
 ///
 /// * `et` is the kind of exception.  The list of possible exceptions is in
@@ -82,13 +89,6 @@ DefaultHandler(ExceptionType et)
 ///
 /// And do not forget to increment the program counter before returning. (Or
 /// else you will loop making the same system call forever!)
-static void DummyExec(void* arg) {
-    //Machine *machinee = (Machine*) arg;
-    currentThread->space->InitRegisters(); 
-    currentThread->space->RestoreState(); 
-    machine->Run();
-}
-
 static void
 SyscallHandler(ExceptionType _et)
 {
@@ -307,6 +307,8 @@ SyscallHandler(ExceptionType _et)
             }
             DEBUG('e', "`Join` requested.\n");
             Thread* t = threadsTable->Get(sid);
+            // Es get o remove ???
+            // Thread* t = threadsTable->Remove(sid);
             int* st = new int;
             t->Join(st);
             machine->WriteRegister(2, *st);
