@@ -27,6 +27,18 @@ void reverse (char str[], int length)
 
 void itoa (int n , char *str) 
 {
+  if (n == 0) {
+    *str = '0';
+    *str++ = '\0';
+    return;
+  }
+
+  int flagNegative = 0;
+  if (n < 0) {
+    flagNegative = 1;
+    n = -n;
+  }
+  
   int i = 0;
   while (n != 0) {
     int c = n % 10;
@@ -34,6 +46,7 @@ void itoa (int n , char *str)
     n = n / 10;
   }
   str[i] = '\0';
+  if (flagNegative) str[i++] = '-';
   reverse(str, i);
   return;
 }
