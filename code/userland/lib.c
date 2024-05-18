@@ -45,8 +45,8 @@ void itoa (int n , char *str)
     str[i++] = c + '0';
     n = n / 10;
   }
-  str[i] = '\0';
   if (flagNegative) str[i++] = '-';
+  str[i] = '\0';
   reverse(str, i);
   return;
 }
