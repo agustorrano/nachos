@@ -1,4 +1,4 @@
-#include "userprog/syscall.h"
+#include "syscall.h"
 
 unsigned strlen (const char *s) 
 {
@@ -7,7 +7,7 @@ unsigned strlen (const char *s)
   return i;
 }
 
-void puts (const char *s)
+void putss (const char *s)
 {
   Write(s, strlen(s), CONSOLE_OUTPUT);
 }
