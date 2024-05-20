@@ -33,9 +33,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     DEBUG('e', "numPages = %u, freeMap = %u.\n", numPages, machine->freeMap->CountClear());
     ASSERT(numPages <= machine->freeMap->CountClear());
-    // ASSERT(numPages <= machine->GetNumPhysicalPages());
-      // Check we are not trying to run anything too big -- at least until we
-      // have virtual memory.
+    // Check we are not trying to run anything too big -- at least until we
+    // have virtual memory.
 
     DEBUG('a', "Initializing address space, num pages %u, size %u\n",
           numPages, size);
@@ -50,10 +49,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             DEBUG('a', "Error: there are no free physical pages.\n");
             break;
         }
-        else
-            pageTable[i].physicalPage = x;
-        // For now, virtual page number = physical page number.
-        //pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = x;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -67,9 +63,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     // segment and the stack segment.
     //
     for (unsigned i = 0; i < numPages; i++) 
-        memset(&mainMemory[pageTable[i].physicalPage], 0, 1);
-    //puede mejorarse, en realidad solo es necesario de stack y uninitdata
-    // memset(mainMemory, 0, size);
+        memset(&mainMemory[pageTable[i].physicalPage * PAGE_SIZE], 0, PAGE_SIZE);
+    
     // Then, copy in the code and data segments into memory.
     uint32_t codeSize = exe.GetCodeSize();
     uint32_t initDataSize = exe.GetInitDataSize();
@@ -146,7 +141,10 @@ AddressSpace::InitRegisters()
 /// For now, nothing!
 void
 AddressSpace::SaveState()
-{}
+{   
+    pageTable = machine->GetMMU()->pageTable;
+    numPages = machine->GetMMU()->pageTableSize;
+}
 
 /// On a context switch, restore the machine state so that this address space
 /// can run.

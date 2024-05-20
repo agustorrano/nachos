@@ -260,6 +260,10 @@ Thread::Finish()
         channel->Send(1); // Father returned from Join
     
     threadToBeDestroyed = currentThread;
+    #ifdef USER_PROGRAM
+    if (threadsTable->IsEmpty()) 
+        interrupt->Halt();    
+    #endif
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
@@ -276,7 +280,10 @@ Thread::Finish(int st)
         channel->Send(st); // Father returned from Join
     
     threadToBeDestroyed = currentThread;
-    
+    #ifdef USER_PROGRAM
+    if (threadsTable->IsEmpty()) 
+        interrupt->Halt();    
+    #endif
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }

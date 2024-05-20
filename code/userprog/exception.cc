@@ -306,12 +306,12 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Join` requested.\n");
-            Thread* t = threadsTable->Get(sid);
+            // Thread* t = threadsTable->Get(sid);
             // Es get o remove ???
-            // Thread* t = threadsTable->Remove(sid);
-            int* st = new int;
-            t->Join(st);
-            machine->WriteRegister(2, *st);
+            Thread* t = threadsTable->Remove(sid);
+            int st;
+            t->Join(&st);
+            machine->WriteRegister(2, st);
             break;
         }
         
@@ -349,6 +349,8 @@ SyscallHandler(ExceptionType _et)
             SpaceId sid = threadsTable->Add(newProc);
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
+                delete space;
+                delete newProc;
                 machine->WriteRegister(2, -1);
             }
             machine->WriteRegister(2, sid);
