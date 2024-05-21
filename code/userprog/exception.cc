@@ -30,6 +30,7 @@
 #include "filesys/file_system.hh"
 #include "machine/synch_console.hh"
 #include "address_space.hh"
+#include "args.hh"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -66,9 +67,17 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
-static void DummyExec(void* arg) {
+static void DummyExec(void* args) {
     currentThread->space->InitRegisters(); 
     currentThread->space->RestoreState(); 
+    if (args != nullptr) {
+        unsigned argc = WriteArgs((char**)args);
+        int sp = machine->ReadRegister(STACK_REG);
+        machine->WriteRegister(4, argc);
+        machine->WriteRegister(5, sp);
+        sp = sp - 24;
+        machine->WriteRegister(STACK_REG, sp);
+    }
     machine->Run();
     ASSERT(false);
 }
@@ -234,6 +243,7 @@ SyscallHandler(ExceptionType _et)
             if (fd == CONSOLE_OUTPUT) { // escribe en la consola
                 DEBUG('e', "`Write` requested for console.\n");
                 int count = -1;
+                DEBUG('e', "buffer: %s\n", buffer);
                 do {
                     count++;
                     synchConsole->WriteChar(buffer[count]);
@@ -317,6 +327,7 @@ SyscallHandler(ExceptionType _et)
         
         case SC_EXEC: {
             int filenameAddr = machine->ReadRegister(4);
+            int allowJoin = machine->ReadRegister(5);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
@@ -333,13 +344,15 @@ SyscallHandler(ExceptionType _et)
             }
             DEBUG('e', "`Exec` requested.\n");
             // crear un nuevo hilo
-            Thread *newProc = new Thread("child", 1, currentThread->GetPriority());
+            Thread *newProc = new Thread("child", allowJoin, currentThread->GetPriority());
             
             // crear su AddressSpace
             OpenFile *executable = fileSystem->Open(filename);
             if (executable == nullptr) {
-                printf("Unable to open file %s\n", filename);
-                return;
+                DEBUG('e', "Error: unable to open file %s\n", filename);
+                delete newProc;
+                machine->WriteRegister(2,-1);
+                break;
             }
             AddressSpace *space = new AddressSpace(executable);
             newProc->space = space;
@@ -355,7 +368,58 @@ SyscallHandler(ExceptionType _et)
             }
             machine->WriteRegister(2, sid);
 
-            newProc->Fork(DummyExec, NULL);
+            newProc->Fork(DummyExec, nullptr);
+            break;
+        }
+
+        case SC_EXEC2: {
+            int filenameAddr = machine->ReadRegister(4);
+            int argsAddr = machine->ReadRegister(5);
+            int allowJoin = machine->ReadRegister(6);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            char** args = SaveArgs(argsAddr);
+
+            DEBUG('e', "`Exec2` requested.\n");
+            // crear un nuevo hilo
+            Thread *newProc = new Thread("child", allowJoin, currentThread->GetPriority());
+            
+            // crear su AddressSpace
+            OpenFile *executable = fileSystem->Open(filename);
+            if (executable == nullptr) {
+                DEBUG('e', "Error: unable to open file %s\n", filename);
+                delete newProc;
+                machine->WriteRegister(2,-1);
+                break;
+            }
+            AddressSpace *space = new AddressSpace(executable);
+            newProc->space = space;
+
+            delete executable;
+
+            SpaceId sid = threadsTable->Add(newProc);
+            if (sid == -1) {
+                DEBUG('e', "Error: too many processes.\n");
+                delete space;
+                delete newProc;
+                machine->WriteRegister(2, -1);
+            }
+            machine->WriteRegister(2, sid);
+            
+            newProc->Fork(DummyExec, args);
             break;
         }
             

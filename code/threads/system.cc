@@ -199,6 +199,7 @@ Initialize(int argc, char **argv)
     synchConsole = new SynchConsole(nullptr, nullptr);
 
     threadsTable = new Table<Thread*>;
+    threadsTable->Add(currentThread);
 
 #endif
 

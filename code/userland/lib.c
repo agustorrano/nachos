@@ -1,6 +1,6 @@
 #include "syscall.h"
 
-unsigned strlen (const char *s) 
+unsigned strlenn (const char *s) 
 {
   unsigned i;
   for (i = 0; s[i] != 0; i++);
@@ -9,7 +9,7 @@ unsigned strlen (const char *s)
 
 void putss (const char *s)
 {
-  Write(s, strlen(s), CONSOLE_OUTPUT);
+  Write(s, strlenn(s), CONSOLE_OUTPUT);
 }
 
 void reverse (char str[], int length)

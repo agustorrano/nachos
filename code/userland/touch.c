@@ -26,7 +26,7 @@ main(int argc, char *argv[])
 int main() {
     Create("test.txt");
     OpenFileId o = Open("test.txt");
-    Write("Hello world\n",12,o);
+    Write("Hello world\n",12,1);
     Close(o);
     return 0;
 }

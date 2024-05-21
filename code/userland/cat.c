@@ -15,8 +15,11 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  char buffer[1];
-  while(Read(buffer, 1, o) > 0)
+  char buffer[2];
+  buffer[1] = '\0';
+  if (Read(buffer, 1, o) == -1)
+    putss("mal\n");
+  while(Read(buffer, 1, o) > 0) 
     putss(buffer);
   
   Close(o);
