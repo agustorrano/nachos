@@ -77,7 +77,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             int virtPage = DivRoundDown(virtualAddr + i, PAGE_SIZE);
             int physPage = pageTable[virtPage].physicalPage;
             int physAddr = physPage*PAGE_SIZE + (virtualAddr + i)%PAGE_SIZE;
-            DEBUG('q', "CODE. virtPage: %d, physPage: %d, physAddr: %X.\n", virtPage, physPage, physAddr);
             exe.ReadCodeBlock(&mainMemory[physAddr], 1, i);
         }
     }
@@ -89,7 +88,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             int virtPage = DivRoundDown(virtualAddr + i, PAGE_SIZE);
             int physPage = pageTable[virtPage].physicalPage;
             int physAddr = physPage*PAGE_SIZE + (virtualAddr + i)%PAGE_SIZE;
-            DEBUG('q', "DATA. virtPage: %d, physPage: %d, physAddr: %X.\n", virtPage, physPage, physAddr);
             exe.ReadDataBlock(&mainMemory[physAddr], 1, i);
         }
     }
@@ -101,9 +99,9 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
-    // for (unsigned i = 0; i < numPages; i++) {
-    //     machine->freeMap->Clear(pageTable[i].physicalPage);
-    // }
+    for (unsigned i = 0; i < numPages; i++) {
+        machine->freeMap->Clear(pageTable[i].physicalPage);
+    }
     delete [] pageTable;
 }
 

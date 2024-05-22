@@ -4,7 +4,7 @@ int main(int argc, char *argv[])
 {
   // Tiene que haber dos argumuentos
   // argv[0] es el programa y argv[1] es el archivo que le pasamos a cat
-  if (argc != 2) {
+  if (argc < 2) {
     putss("Error: invalid number of arguments.\n");
     return -1;
   }
@@ -17,8 +17,6 @@ int main(int argc, char *argv[])
 
   char buffer[2];
   buffer[1] = '\0';
-  if (Read(buffer, 1, o) == -1)
-    putss("mal\n");
   while(Read(buffer, 1, o) > 0) 
     putss(buffer);
   
