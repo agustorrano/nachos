@@ -243,7 +243,6 @@ SyscallHandler(ExceptionType _et)
             if (fd == CONSOLE_OUTPUT) { // escribe en la consola
                 DEBUG('e', "`Write` requested for console.\n");
                 int count = -1;
-                DEBUG('e', "buffer: %s\n", buffer);
                 do {
                     count++;
                     synchConsole->WriteChar(buffer[count]);
@@ -316,8 +315,6 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Join` requested.\n");
-            // Thread* t = threadsTable->Get(sid);
-            // Es get o remove ???
             Thread* t = threadsTable->Remove(sid);
             int st;
             t->Join(&st);
@@ -365,6 +362,7 @@ SyscallHandler(ExceptionType _et)
                 delete space;
                 delete newProc;
                 machine->WriteRegister(2, -1);
+                break;
             }
             machine->WriteRegister(2, sid);
 
@@ -416,6 +414,7 @@ SyscallHandler(ExceptionType _et)
                 delete space;
                 delete newProc;
                 machine->WriteRegister(2, -1);
+                break;
             }
             machine->WriteRegister(2, sid);
             
