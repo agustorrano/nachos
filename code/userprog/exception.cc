@@ -426,9 +426,9 @@ SyscallHandler(ExceptionType _et)
             int status = machine->ReadRegister(4);
             DEBUG('e', "`Exit` requested with status %d.\n", status);
             // liberamos la memoria del mapa de bits
-            int numPhysPages = machine->GetNumPhysicalPages();
-            for (int i = 0; i < numPhysPages; i++)
-                machine->freeMap->Clear(i);
+            // int numPhysPages = machine->GetNumPhysicalPages();
+            // for (int i = 0; i < numPhysPages; i++)
+            //     machine->freeMap->Clear(i);
             currentThread->Finish(status);
             break;
         }

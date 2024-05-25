@@ -69,7 +69,7 @@ Machine::Machine(SingleStepper *st, unsigned aNumPhysicalPages): mmu(aNumPhysica
         mainMemory[i] = 0;
     }
     numPhysicalPages = aNumPhysicalPages;
-    freeMap = new Bitmap(numPhysicalPages);
+    
 }
 
 unsigned Machine::GetNumPhysicalPages() {

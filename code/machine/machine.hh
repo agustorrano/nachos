@@ -125,8 +125,6 @@ public:
                        ///< code and data, while executing.
 
     unsigned GetNumPhysicalPages();
-    
-    Bitmap  *freeMap;
 
 private:
     SingleStepper *singleStepper;  ///< Drop back into the method of a

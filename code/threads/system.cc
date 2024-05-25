@@ -41,7 +41,7 @@ SynchDisk *synchDisk;
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole;
 Table <Thread*> *threadsTable;
-
+Bitmap *bitMap;
 #endif
 
 // External definition, to allow us to take a pointer to this function.
@@ -201,6 +201,8 @@ Initialize(int argc, char **argv)
     threadsTable = new Table<Thread*>;
     threadsTable->Add(currentThread);
 
+    bitMap = new Bitmap(numPhysicalPages);
+
 #endif
 
 #ifdef FILESYS
@@ -223,6 +225,7 @@ Cleanup()
     delete machine;
     delete synchConsole;
     delete threadsTable;
+    delete bitMap;
 #endif
 
 #ifdef FILESYS_NEEDED

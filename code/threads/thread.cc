@@ -92,11 +92,11 @@ Thread::Thread(const char *threadName, int join, const unsigned int threadPriori
 /// Nachos.
 Thread::~Thread()
 {
-    DEBUG('t', "Deleting thread \"%s\"\n", name);
-
     ASSERT(this != currentThread);
-     if (allowJoin)
-         delete channel;
+
+    if (allowJoin)
+        delete channel;
+        
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);

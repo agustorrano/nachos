@@ -31,8 +31,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    DEBUG('e', "numPages = %u, freeMap = %u.\n", numPages, machine->freeMap->CountClear());
-    ASSERT(numPages <= machine->freeMap->CountClear());
+    ASSERT(numPages <= bitMap->CountClear());
     // Check we are not trying to run anything too big -- at least until we
     // have virtual memory.
 
@@ -44,7 +43,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-        int x = machine->freeMap->Find();
+        int x = bitMap->Find();
         if (x == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
             break;
@@ -100,7 +99,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 AddressSpace::~AddressSpace()
 {
     for (unsigned i = 0; i < numPages; i++) {
-        machine->freeMap->Clear(pageTable[i].physicalPage);
+        bitMap->Clear(pageTable[i].physicalPage);
     }
     delete [] pageTable;
 }
