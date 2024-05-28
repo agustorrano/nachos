@@ -15,9 +15,13 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
     ASSERT(outBuffer != nullptr);
     unsigned count = 0;
     int temp;
+    int maxIter = 3;
+    int i;
     while (count < byteCount) {
         count++;
-        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        //ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        for (i = 0; i < maxIter && !machine->ReadMem(userAddress++, 1, &temp); i++);
+        if (i == maxIter) ASSERT(0);
         *outBuffer = (unsigned char) temp;
         outBuffer++;
     }
@@ -32,10 +36,14 @@ bool ReadStringFromUser(int userAddress, char *outString,
     ASSERT(maxByteCount != 0);
 
     unsigned count = 0;
+    int maxIter = 3;
+    int i;
     do {
         int temp;
         count++;
-        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        //ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        for (i = 0; i < maxIter && !machine->ReadMem(userAddress++, 1, &temp); i++);
+        if (i == maxIter) ASSERT(0);
         *outString = (unsigned char) temp;
     } while (*outString++ != '\0' && count < maxByteCount);
 
@@ -48,10 +56,14 @@ void WriteBufferToUser(const char *buffer, int userAddress,
     ASSERT(userAddress != 0);
     ASSERT(buffer != nullptr);
     unsigned count = 0;
+    int maxIter = 3;
+    int i;
     while (count < byteCount) {
         int temp = (int) *buffer;
         count++;
-        ASSERT(machine->WriteMem(userAddress++, 1, temp));
+        //ASSERT(machine->WriteMem(userAddress++, 1, temp));
+        for (i = 0; i < maxIter && !machine->WriteMem(userAddress++, 1, temp); i++);
+        if (i == maxIter) ASSERT(0);
         buffer++;
     }
     return;
@@ -61,9 +73,13 @@ void WriteStringToUser(const char *string, int userAddress)
 {
     ASSERT(string != nullptr);
     ASSERT(userAddress != 0);
+    int maxIter = 3;
+    int i;
     do {
         int temp = (int) *string;
-        ASSERT(machine->WriteMem(userAddress++, 1, temp));
+        //ASSERT(machine->WriteMem(userAddress++, 1, temp));
+        for (i = 0; i < maxIter && !machine->WriteMem(userAddress++, 1, temp); i++);
+        if (i == maxIter) ASSERT(0);
     } while (*string++ != '\0');
     return;
 }

@@ -139,17 +139,32 @@ AddressSpace::InitRegisters()
 void
 AddressSpace::SaveState()
 {   
+    #ifndef USE_TLB
     pageTable = machine->GetMMU()->pageTable;
     numPages = machine->GetMMU()->pageTableSize;
+    #endif
 }
 
 /// On a context switch, restore the machine state so that this address space
 /// can run.
 ///
 /// For now, tell the machine where to find the page table.
+
 void
 AddressSpace::RestoreState()
-{
+{   
+    #ifdef USE_TLB
+    for (unsigned i = 0; i < TLB_SIZE; i++)
+        machine->GetMMU()->tlb[i].valid = false;
+    return;
+    #endif
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
+}
+
+
+TranslationEntry* 
+AddressSpace::GetPageTable() 
+{
+   return pageTable;
 }

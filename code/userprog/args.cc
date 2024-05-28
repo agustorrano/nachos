@@ -56,11 +56,15 @@ SaveArgs(int address)
     // always be at least 1.
     char **args = new char * [count + 1];
 
+    int maxIter = 3;
     for (unsigned i = 0; i < count; i++) {
         args[i] = new char [MAX_ARG_LENGTH];
         int strAddr;
         // For each pointer, read the corresponding string.
-        machine->ReadMem(address + i * 4, 4, &strAddr);
+        int j;
+        for (j = 0; j < maxIter && !machine->ReadMem(address + i * 4, 4, &strAddr); j++);
+        if (j == maxIter) ASSERT(0);
+        
         ReadStringFromUser(strAddr, args[i], MAX_ARG_LENGTH);
     }
     args[count] = nullptr;  // Write the trailing null.
@@ -96,10 +100,17 @@ WriteArgs(char **args)
     sp -= sp % 4;     // Align the stack to a multiple of four.
     sp -= c * 4 + 4;  // Make room for `argv`, including the trailing null.
     // Write each argument's address.
+    int maxIter = 3;
     for (unsigned i = 0; i < c; i++) {
-        machine->WriteMem(sp + 4 * i, 4, argsAddress[i]);
+        int j;
+        for (j = 0; j < maxIter && !machine->WriteMem(sp + 4 * i, 4, argsAddress[i]); j++);
+        if (j == maxIter) ASSERT(0);
+        //machine->WriteMem(sp + 4 * i, 4, argsAddress[i]);
     }
-    machine->WriteMem(sp + 4 * c, 4, 0);  // The last is null.
+    int i;
+    for (i = 0; i < maxIter && !machine->WriteMem(sp + 4 * c, 4, 0); i++);
+    if (i == maxIter) ASSERT(0);
+    //machine->WriteMem(sp + 4 * c, 4, 0);  // The last is null.
 
     machine->WriteRegister(STACK_REG, sp);
     return c;

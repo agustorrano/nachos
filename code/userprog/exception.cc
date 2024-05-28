@@ -24,6 +24,7 @@
 
 #include "transfer.hh"
 #include "syscall.h"
+#include <time.h>
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "lib/table.hh"
@@ -441,6 +442,30 @@ SyscallHandler(ExceptionType _et)
     IncrementPC();
 }
 
+static void
+PageFaultHandler (ExceptionType _et)
+{
+    uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
+    int vpn = DivRoundDown(vAddr, PAGE_SIZE);
+    DEBUG('e', "Page fault: [%d].\n", vpn);
+//    int i;
+//    for (i = 0; i < TLB_SIZE && !machine->GetMMU()->tlb[i].valid; i++);
+//      if (i == TLB_SIZE) {
+          srand(time(nullptr));
+          int i = rand() % TLB_SIZE; // se elige una página aleatoria para pisar
+//      }
+    TranslationEntry* pageTable = currentThread->space->GetPageTable();
+    machine->GetMMU()->tlb[i] = pageTable[vpn];
+
+}
+
+static void
+ReadOnlyHandler (ExceptionType _et) 
+{
+    int vAddr = machine->ReadRegister(BAD_VADDR_REG);
+    fprintf(stderr, "Tried to modify the contents of a readOnly page. VirtualAddr: %d.\n", vAddr);
+    ASSERT(false);
+}
 
 /// By default, only system calls have their own handler.  All other
 /// exception types are assigned the default handler.
@@ -449,8 +474,8 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
-    machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
+    machine->SetHandler(READ_ONLY_EXCEPTION,     &ReadOnlyHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);

@@ -20,6 +20,7 @@ main(void)
     Close(o);
     //int x = Exec("touch");
     //Join(x);
+    Halt();
     return 0;
 }
 
