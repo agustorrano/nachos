@@ -24,7 +24,9 @@ Statistics::Statistics()
 #ifdef DFS_TICKS_FIX
     tickResets = 0;
 #endif
-
+#ifdef USE_TLB 
+    numPageHits = 0;
+#endif
 }
 
 /// Print performance metrics, when we have finished everything at system
@@ -43,5 +45,12 @@ Statistics::Print()
     printf("Disk I/O: reads %lu, writes %lu\n", numDiskReads, numDiskWrites);
     printf("Console I/O: reads %lu, writes %lu\n",
            numConsoleCharsRead, numConsoleCharsWritten);
-    printf("Paging: faults %lu\n", numPageFaults);
+    printf("Paging: faults %lu", numPageFaults);
+#ifdef USE_TLB
+    printf(", hits %lu\n", numPageHits);
+#endif
+#ifndef USE_TLB
+    printf("\n");
+#endif
 }
+

@@ -447,16 +447,13 @@ PageFaultHandler (ExceptionType _et)
 {
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
     int vpn = DivRoundDown(vAddr, PAGE_SIZE);
-    DEBUG('e', "Page fault: [%d].\n", vpn);
-//    int i;
-//    for (i = 0; i < TLB_SIZE && !machine->GetMMU()->tlb[i].valid; i++);
-//      if (i == TLB_SIZE) {
-          srand(time(nullptr));
-          int i = rand() % TLB_SIZE; // se elige una página aleatoria para pisar
-//      }
+    //srand(time(nullptr));
+    //int i = rand() % TLB_SIZE; // se elige una página aleatoria para pisar
+    int i = stats->numPageFaults++ % TLB_SIZE;
+    DEBUG('e', "Page fault: [%d], victim: [%d].\n", vpn, i);
     TranslationEntry* pageTable = currentThread->space->GetPageTable();
     machine->GetMMU()->tlb[i] = pageTable[vpn];
-
+    
 }
 
 static void

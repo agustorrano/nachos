@@ -116,6 +116,9 @@ Machine::ReadMem(unsigned addr, unsigned size, int *value)
         RaiseException(e, addr);
         return false;
     }
+    #ifdef USE_TLB
+        stats->numPageHits++;
+    #endif
     return true;
 }
 
@@ -127,6 +130,9 @@ Machine::WriteMem(unsigned addr, unsigned size, int value)
         RaiseException(e, addr);
         return false;
     }
+    #ifdef USE_TLB
+        stats->numPageHits++;
+    #endif
     return true;
 }
 

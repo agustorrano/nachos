@@ -39,6 +39,7 @@ main(void)
         }
     }
 
+    Halt();
     // And then we are done.
     return C[DIM - 1][DIM - 1];
 }
