@@ -33,6 +33,9 @@ const unsigned TLB_SIZE = 4;
 // Paging: faults 110, hits 709405 MATMULT CON 32 porcentaje de hits: 99.984497
 // Paging: faults 47, hits 709352 MATMULT CON 64 porcentaje de hits: 99.993370
 
+// CAMBIARLO, PORQUE CAMBIE EL NUM HITS.
+// HAY QUE HACERLO INCREMENTANDO DE A POCO LA CANT D PAGS, NO PASAR DE 4 A 32, Y BUSCAR EL MAXIMO
+
 // ¿ la conclusion que diria yo es que por el cambio en el porcentaje de hits,
 // vale la pena pasar de 4 a 32gb, pero tener un 99.9% con esa cantidad de cache 
 // hace que no sea necesario utilizar 64gb. ?

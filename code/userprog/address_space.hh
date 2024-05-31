@@ -13,7 +13,7 @@
 #ifndef NACHOS_USERPROG_ADDRESSSPACE__HH
 #define NACHOS_USERPROG_ADDRESSSPACE__HH
 
-
+#include <cstdint>
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
 
@@ -49,8 +49,16 @@ public:
 
     TranslationEntry* GetPageTable();
 
+    TranslationEntry CheckPageinMemory (uint32_t vpn);
+
+    uint32_t codeSize;
+    uint32_t initDataSize;
+    uint32_t codeVAddr;
+    uint32_t initDataVAddr;
+    
 private:
 
+    OpenFile* executableFile;
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
 

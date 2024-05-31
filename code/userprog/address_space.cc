@@ -18,10 +18,11 @@
 /// and we have a single unsegmented page table.
 AddressSpace::AddressSpace(OpenFile *executable_file)
 {
+    executableFile = executable_file;
 
-    ASSERT(executable_file != nullptr);
+    ASSERT(executableFile != nullptr);
 
-    Executable exe (executable_file);
+    Executable exe (executableFile);
     ASSERT(exe.CheckMagic());
 
     // How big is address space?
@@ -43,6 +44,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
+        #ifndef USE_DEMANDLOADING
         int x = bitMap->Find();
         if (x == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
@@ -50,47 +52,56 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         }
         pageTable[i].physicalPage = x;
         pageTable[i].valid        = true;
+        #else 
+        pageTable[i].valid        = false;
+        #endif
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
     }
+
     char *mainMemory = machine->mainMemory;
+    for (unsigned i = 0; i < numPages; i++) 
+        memset(&mainMemory[pageTable[i].physicalPage * PAGE_SIZE], 0, PAGE_SIZE);
+    
+    codeSize = exe.GetCodeSize();
+    initDataSize = exe.GetInitDataSize();
+    codeVAddr = exe.GetCodeAddr();
+    initDataVAddr = exe.GetInitDataAddr();
+    DEBUG('e', "codeSize: %d, initDataSize: %d.\n", codeSize, initDataSize);
+    DEBUG('e', "codeAddr: %d, initDataAddr: %d.\n", codeVAddr, initDataVAddr);
+    #ifndef USE_DEMANDLOADING
 
     // Zero out the entire address space, to zero the unitialized data
     // segment and the stack segment.
     //
-    for (unsigned i = 0; i < numPages; i++) 
-        memset(&mainMemory[pageTable[i].physicalPage * PAGE_SIZE], 0, PAGE_SIZE);
-    
     // Then, copy in the code and data segments into memory.
-    uint32_t codeSize = exe.GetCodeSize();
-    uint32_t initDataSize = exe.GetInitDataSize();
+
     if (codeSize > 0) {
-        uint32_t virtualAddr = exe.GetCodeAddr();
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
-              virtualAddr, codeSize);
+              codeVAddr, codeSize);
 
         for (uint32_t i = 0; i < codeSize; i++) {
-            int virtPage = DivRoundDown(virtualAddr + i, PAGE_SIZE);
+            int virtPage = DivRoundDown(codeVAddr + i, PAGE_SIZE);
             int physPage = pageTable[virtPage].physicalPage;
-            int physAddr = physPage*PAGE_SIZE + (virtualAddr + i)%PAGE_SIZE;
+            int physAddr = physPage*PAGE_SIZE + (codeVAddr + i)%PAGE_SIZE;
             exe.ReadCodeBlock(&mainMemory[physAddr], 1, i);
         }
     }
     if (initDataSize > 0) {
-        uint32_t virtualAddr = exe.GetInitDataAddr();
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
-              virtualAddr, initDataSize);
+              initDataVAddr, initDataSize);
+        
         for (uint32_t i = 0; i < initDataSize; i++) {
-            int virtPage = DivRoundDown(virtualAddr + i, PAGE_SIZE);
+            int virtPage = DivRoundDown(initDataVAddr + i, PAGE_SIZE);
             int physPage = pageTable[virtPage].physicalPage;
-            int physAddr = physPage*PAGE_SIZE + (virtualAddr + i)%PAGE_SIZE;
+            int physAddr = physPage*PAGE_SIZE + (initDataVAddr + i)%PAGE_SIZE;
             exe.ReadDataBlock(&mainMemory[physAddr], 1, i);
         }
     }
-
+    #endif
 }
 
 /// Deallocate an address space.
@@ -156,10 +167,10 @@ AddressSpace::RestoreState()
     #ifdef USE_TLB
     for (unsigned i = 0; i < TLB_SIZE; i++)
         machine->GetMMU()->tlb[i].valid = false;
-    return;
-    #endif
+    #else
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
+    #endif
 }
 
 
@@ -167,4 +178,66 @@ TranslationEntry*
 AddressSpace::GetPageTable() 
 {
    return pageTable;
+}
+
+TranslationEntry
+AddressSpace::CheckPageinMemory(uint32_t vpn)
+{
+    if (pageTable[vpn].valid == false) {
+        DEBUG('e',"en checkpage. vpn %d.\n", vpn);
+        int physPage = bitMap->Find();
+        if (physPage == -1) {
+            DEBUG('a', "Error: there are no free physical pages.\n");
+            ASSERT(0);
+        }
+        pageTable[vpn].physicalPage = physPage;   
+        pageTable[vpn].valid = true;
+        
+        uint32_t virtAddr = vpn * PAGE_SIZE; // direcc donde comienza la pag a cargar en memoria
+        char *mainMemory = machine->mainMemory;
+
+        /* de donde saco el ejecutable? */
+        ASSERT(executableFile != nullptr);
+        Executable exe (executableFile);
+        ASSERT(exe.CheckMagic());
+
+        uint32_t codeVAddrFinal = codeVAddr + codeSize;
+        uint32_t initDataVAddrFinal = initDataVAddr + initDataSize;
+        
+        uint32_t read = 0;
+        uint32_t j;
+        if (virtAddr >= codeVAddr && virtAddr < codeVAddrFinal)
+        {
+            // calculo la parte de la pagina que es de codigo:
+            if ((codeVAddrFinal - virtAddr) < PAGE_SIZE) j = (codeVAddrFinal - virtAddr);
+            else j = PAGE_SIZE;
+
+            for (; read < j; read++) {
+                int physAddr = physPage*PAGE_SIZE + (virtAddr + read)%PAGE_SIZE;
+                exe.ReadCodeBlock(&mainMemory[physAddr], 1, (virtAddr + read));
+            }
+        }
+
+        if ((virtAddr + read) >= initDataVAddr  && (virtAddr + read) < initDataVAddrFinal)
+        {
+            // calculo la parte de la pagina que es de datos:
+            if ((initDataVAddrFinal - (virtAddr + read)) < PAGE_SIZE) j = (initDataVAddrFinal - (virtAddr + read));
+            else j = PAGE_SIZE;
+            for (; read < j; read++) {
+                int physAddr = physPage*PAGE_SIZE + (virtAddr + read)%PAGE_SIZE;
+                exe.ReadDataBlock(&mainMemory[physAddr], 1, ?);
+            }
+        }
+
+        if (virtAddr > (codeSize + initDataSize)) // pertenece a la stack
+        {
+            // hay que rellenar con 0's la pagina que pedimos antes
+            for (uint32_t i = 0; i < PAGE_SIZE; i++) {
+                int physAddr = physPage*PAGE_SIZE + (vpn + i)%PAGE_SIZE;
+                machine->WriteMem(physAddr, 1, 0);
+            }
+        }
+
+    }
+    return pageTable[vpn];
 }

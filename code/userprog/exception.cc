@@ -355,7 +355,9 @@ SyscallHandler(ExceptionType _et)
             AddressSpace *space = new AddressSpace(executable);
             newProc->space = space;
 
+            #ifndef USE_DEMANDLOADING 
             delete executable;
+            #endif 
 
             SpaceId sid = threadsTable->Add(newProc);
             if (sid == -1) {
@@ -442,18 +444,18 @@ SyscallHandler(ExceptionType _et)
     IncrementPC();
 }
 
+
 static void
 PageFaultHandler (ExceptionType _et)
 {
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
-    int vpn = DivRoundDown(vAddr, PAGE_SIZE);
-    //srand(time(nullptr));
-    //int i = rand() % TLB_SIZE; // se elige una página aleatoria para pisar
+    uint32_t vpn = DivRoundDown(vAddr, PAGE_SIZE);
     int i = stats->numPageFaults++ % TLB_SIZE;
-    DEBUG('e', "Page fault: [%d], victim: [%d].\n", vpn, i);
-    TranslationEntry* pageTable = currentThread->space->GetPageTable();
-    machine->GetMMU()->tlb[i] = pageTable[vpn];
-    
+    DEBUG('e', "Page [%d] fault.\n", vpn);
+    TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
+    machine->GetMMU()->tlb[i] = page; 
+    // TranslationEntry* pageTable = currentThread->space->GetPageTable();
+    // machine->GetMMU()->tlb[i] = pageTable[vpn]; 
 }
 
 static void

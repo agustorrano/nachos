@@ -47,9 +47,8 @@ Statistics::Print()
            numConsoleCharsRead, numConsoleCharsWritten);
     printf("Paging: faults %lu", numPageFaults);
 #ifdef USE_TLB
-    printf(", hits %lu\n", numPageHits);
-#endif
-#ifndef USE_TLB
+    printf(", hits %lu\n", (numPageHits - numPageFaults));
+#else
     printf("\n");
 #endif
 }
