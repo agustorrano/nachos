@@ -204,28 +204,31 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
         uint32_t codeVAddrFinal = codeVAddr + codeSize;
         uint32_t initDataVAddrFinal = initDataVAddr + initDataSize;
         
-        uint32_t read = 0;
         uint32_t j;
+        uint32_t read = 0;
         if (virtAddr >= codeVAddr && virtAddr < codeVAddrFinal)
         {
-            // calculo la parte de la pagina que es de codigo:
-            if ((codeVAddrFinal - virtAddr) < PAGE_SIZE) j = (codeVAddrFinal - virtAddr);
-            else j = PAGE_SIZE;
+            // chequeo si toda la pagina es de codigo
+            if (virtAddr + PAGE_SIZE < codeVAddrFinal) j = PAGE_SIZE; // leo toda la pagina
+            else j = codeVAddrFinal - virtAddr; // leo hasta el final del segmento de codigo
 
             for (; read < j; read++) {
-                int physAddr = physPage*PAGE_SIZE + (virtAddr + read)%PAGE_SIZE;
-                exe.ReadCodeBlock(&mainMemory[physAddr], 1, (virtAddr + read));
+                int offset = (virtAddr + read)%PAGE_SIZE;
+                int physAddr = physPage*PAGE_SIZE + offset;
+                exe.ReadCodeBlock(&mainMemory[physAddr], 1, (virtAddr + read - codeVAddr));
             }
+            virtAddr = virtAddr + read; // actualizo a donde quiero seguir leyendo
         }
-
-        if ((virtAddr + read) >= initDataVAddr  && (virtAddr + read) < initDataVAddrFinal)
+        read = 0;
+        if (virtAddr >= initDataVAddr  && virtAddr < initDataVAddrFinal)
         {
             // calculo la parte de la pagina que es de datos:
-            if ((initDataVAddrFinal - (virtAddr + read)) < PAGE_SIZE) j = (initDataVAddrFinal - (virtAddr + read));
-            else j = PAGE_SIZE;
+            if (virtAddr + PAGE_SIZE < initDataVAddrFinal) j = PAGE_SIZE; // leo toda la pagina
+            else j = initDataVAddrFinal - virtAddr;
             for (; read < j; read++) {
-                int physAddr = physPage*PAGE_SIZE + (virtAddr + read)%PAGE_SIZE;
-                exe.ReadDataBlock(&mainMemory[physAddr], 1, ?);
+                int offset = (virtAddr + read)%PAGE_SIZE;
+                int physAddr = physPage*PAGE_SIZE + offset;
+                exe.ReadDataBlock(&mainMemory[physAddr], 1, virtAddr + read - initDataVAddr);
             }
         }
 
