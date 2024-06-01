@@ -70,8 +70,8 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     initDataSize = exe.GetInitDataSize();
     codeVAddr = exe.GetCodeAddr();
     initDataVAddr = exe.GetInitDataAddr();
-    DEBUG('e', "codeSize: %d, initDataSize: %d.\n", codeSize, initDataSize);
-    DEBUG('e', "codeAddr: %d, initDataAddr: %d.\n", codeVAddr, initDataVAddr);
+    DEBUG('a', "codeSize: %d, initDataSize: %d.\n", codeSize, initDataSize);
+    DEBUG('a', "codeAddr: %d, initDataAddr: %d.\n", codeVAddr, initDataVAddr);
     #ifndef USE_DEMANDLOADING
 
     // Zero out the entire address space, to zero the unitialized data
@@ -184,7 +184,7 @@ TranslationEntry
 AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     if (pageTable[vpn].valid == false) {
-        DEBUG('e',"en checkpage. vpn %d.\n", vpn);
+        DEBUG('a',"Loading VPN %d into memory.\n", vpn);
         int physPage = bitMap->Find();
         if (physPage == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
@@ -205,42 +205,44 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
         uint32_t initDataVAddrFinal = initDataVAddr + initDataSize;
         
         uint32_t j;
-        uint32_t read = 0;
+        uint32_t readCode = 0;
+        uint32_t readData = 0;
         if (virtAddr >= codeVAddr && virtAddr < codeVAddrFinal)
         {
+            DEBUG('a', "Writing code from VPN [%d] into PPN [%d].\n", vpn, physPage);
             // chequeo si toda la pagina es de codigo
             if (virtAddr + PAGE_SIZE < codeVAddrFinal) j = PAGE_SIZE; // leo toda la pagina
             else j = codeVAddrFinal - virtAddr; // leo hasta el final del segmento de codigo
-
-            for (; read < j; read++) {
-                int offset = (virtAddr + read)%PAGE_SIZE;
+            for (; readCode < j; readCode++) {
+                int offset = (virtAddr + readCode)%PAGE_SIZE;
                 int physAddr = physPage*PAGE_SIZE + offset;
-                exe.ReadCodeBlock(&mainMemory[physAddr], 1, (virtAddr + read - codeVAddr));
+                exe.ReadCodeBlock(&mainMemory[physAddr], 1, (virtAddr + readCode - codeVAddr));
             }
-            virtAddr = virtAddr + read; // actualizo a donde quiero seguir leyendo
+            virtAddr = virtAddr + readCode; // actualizo a donde quiero seguir leyendo
         }
-        read = 0;
         if (virtAddr >= initDataVAddr  && virtAddr < initDataVAddrFinal)
         {
+            DEBUG('a', "Writing data from VPN [%d] into PPN [%d].\n", vpn, physPage);
             // calculo la parte de la pagina que es de datos:
-            if (virtAddr + PAGE_SIZE < initDataVAddrFinal) j = PAGE_SIZE; // leo toda la pagina
+            if (virtAddr + (PAGE_SIZE - readCode) < initDataVAddrFinal) j = (PAGE_SIZE - readCode); 
             else j = initDataVAddrFinal - virtAddr;
-            for (; read < j; read++) {
-                int offset = (virtAddr + read)%PAGE_SIZE;
+            for (; readData < j; readData++) {
+                int offset = (virtAddr + readData)%PAGE_SIZE;
                 int physAddr = physPage*PAGE_SIZE + offset;
-                exe.ReadDataBlock(&mainMemory[physAddr], 1, virtAddr + read - initDataVAddr);
+                exe.ReadDataBlock(&mainMemory[physAddr], 1, (virtAddr + readData - initDataVAddr));
             }
+            virtAddr = virtAddr + readData; // actualizo a donde quiero seguir leyendo
         }
 
         if (virtAddr > (codeSize + initDataSize)) // pertenece a la stack
         {
+            DEBUG('a', "In stack segment. VPN: [%d], PPN: [%d].\n", vpn, physPage);
             // hay que rellenar con 0's la pagina que pedimos antes
             for (uint32_t i = 0; i < PAGE_SIZE; i++) {
-                int physAddr = physPage*PAGE_SIZE + (vpn + i)%PAGE_SIZE;
-                machine->WriteMem(physAddr, 1, 0);
+                int physAddr = physPage*PAGE_SIZE + (virtAddr + i)%PAGE_SIZE;
+                memset(&mainMemory[physAddr], 0, PAGE_SIZE);
             }
         }
-
     }
     return pageTable[vpn];
 }

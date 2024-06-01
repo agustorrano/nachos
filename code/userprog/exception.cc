@@ -24,7 +24,6 @@
 
 #include "transfer.hh"
 #include "syscall.h"
-#include <time.h>
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "lib/table.hh"
@@ -33,6 +32,7 @@
 #include "address_space.hh"
 #include "args.hh"
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 #define SIZE_MAX_FILE 1000
@@ -450,12 +450,10 @@ PageFaultHandler (ExceptionType _et)
 {
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
     uint32_t vpn = DivRoundDown(vAddr, PAGE_SIZE);
+    DEBUG('e', "Page [%d] Fault.\n", vpn);
     int i = stats->numPageFaults++ % TLB_SIZE;
-    DEBUG('e', "Page [%d] fault.\n", vpn);
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
     machine->GetMMU()->tlb[i] = page; 
-    // TranslationEntry* pageTable = currentThread->space->GetPageTable();
-    // machine->GetMMU()->tlb[i] = pageTable[vpn]; 
 }
 
 static void
