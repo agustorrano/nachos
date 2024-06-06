@@ -26,19 +26,23 @@ const unsigned DEFAULT_NUM_PHYS_PAGES = 32;
 ///
 /// If there is a TLB, it will be small compared to page tables.
 const unsigned TLB_SIZE = 4;
-// Paging: faults 1581058, hits 22610001 SORT CON 4. porcentaje de hits: 93.464287
-// Paging: faults 3069, hits 22080139 SORT CON 32    porcentaje de hits: 99.986107
-// Paging: faults 39, hits 22077476 SORT CON 64 porcentaje de hits: 99.999825
-// Paging: faults 62631, hits 747057 MATMULT CON 4 porcentaje de hits: 92.264801
-// Paging: faults 110, hits 709405 MATMULT CON 32 porcentaje de hits: 99.984497
-// Paging: faults 47, hits 709352 MATMULT CON 64 porcentaje de hits: 99.993370
+// Paging: faults 1581058, hits 21028943 SORT CON 4. porcentaje de hits: 93.007
+// Paging: faults 3069, hits 22077070 SORT CON 32    porcentaje de hits: 99.986
+// Paging: faults 39, hits 22077437 SORT CON 64 porcentaje de hits: 99.999
+// Paging: faults 62631, hits 684426 MATMULT CON 4 porcentaje de hits: 91.616
+// Paging: faults 110, hits 709295 MATMULT CON 32 porcentaje de hits: 99.984
+// Paging: faults 47, hits 709305 MATMULT CON 64 porcentaje de hits: 99.993
 
-// CAMBIARLO, PORQUE CAMBIE EL NUM HITS.
 // HAY QUE HACERLO INCREMENTANDO DE A POCO LA CANT D PAGS, NO PASAR DE 4 A 32, Y BUSCAR EL MAXIMO
 
 // ¿ la conclusion que diria yo es que por el cambio en el porcentaje de hits,
 // vale la pena pasar de 4 a 32gb, pero tener un 99.9% con esa cantidad de cache 
 // hace que no sea necesario utilizar 64gb. ?
+
+// matmult con 16: Paging: faults 8335, hits 707818 -> 98.836%
+// sort con 16: Paging: faults 10826, hits 2207489 -> 99.511%
+
+
 /// This class simulates an MMU (memory management unit) that can use either
 /// page tables or a TLB.
 class MMU {

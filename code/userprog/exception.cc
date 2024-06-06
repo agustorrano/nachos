@@ -409,8 +409,10 @@ SyscallHandler(ExceptionType _et)
             AddressSpace *space = new AddressSpace(executable);
             newProc->space = space;
 
+            #ifndef USE_DEMANDLOADING 
             delete executable;
-
+            #endif 
+            
             SpaceId sid = threadsTable->Add(newProc);
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
