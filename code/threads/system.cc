@@ -44,6 +44,10 @@ Table <Thread*> *threadsTable;
 Bitmap *bitMap;
 #endif
 
+#ifdef USE_SWAP
+Table <CoremapEntry*> *coreMap;
+#endif
+
 // External definition, to allow us to take a pointer to this function.
 extern void Cleanup();
 
@@ -204,6 +208,13 @@ Initialize(int argc, char **argv)
     bitMap = new Bitmap(numPhysicalPages);
 
 #endif
+
+// creo que habria que deshabilitar el bitmap?
+// la tabla solo puede tener 20 entradas, no se si es una buena forma de implementar el coremap
+// necesitamos 32 entradas ?
+#ifdef USE_SWAP 
+    coreMap = new Table<CoremapEntry*>;
+#endif 
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
