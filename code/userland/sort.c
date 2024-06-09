@@ -7,7 +7,7 @@
 
 
 #include "syscall.h"
-
+#include "lib.c"
 
 #define DIM  1024
 
@@ -34,8 +34,9 @@ main(void)
             }
         }
     }
-
-    Halt();
+    char buffer [10];
+    itoa(A[0], buffer);
+    putss (buffer);
     // And then we're done -- should be 0!
     return A[0];
 }

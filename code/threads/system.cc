@@ -41,12 +41,15 @@ SynchDisk *synchDisk;
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole;
 Table <Thread*> *threadsTable;
-Bitmap *bitMap;
-#endif
 
 #ifdef USE_SWAP
-Table <CoremapEntry*> *coreMap;
+Coremap *memCoreMap;
+#else 
+Bitmap *memBitMap;
 #endif
+
+#endif
+
 
 // External definition, to allow us to take a pointer to this function.
 extern void Cleanup();
@@ -203,18 +206,16 @@ Initialize(int argc, char **argv)
     synchConsole = new SynchConsole(nullptr, nullptr);
 
     threadsTable = new Table<Thread*>;
-    threadsTable->Add(currentThread);
+    //threadsTable->Add(currentThread);
 
-    bitMap = new Bitmap(numPhysicalPages);
+#ifdef USE_SWAP
+    memCoreMap = new Coremap(numPhysicalPages);
+#else 
+    memBitMap = new Bitmap(numPhysicalPages);
+#endif
 
 #endif
 
-// creo que habria que deshabilitar el bitmap?
-// la tabla solo puede tener 20 entradas, no se si es una buena forma de implementar el coremap
-// necesitamos 32 entradas ?
-#ifdef USE_SWAP 
-    coreMap = new Table<CoremapEntry*>;
-#endif 
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
@@ -236,7 +237,13 @@ Cleanup()
     delete machine;
     delete synchConsole;
     delete threadsTable;
-    delete bitMap;
+    
+    #ifdef USE_SWAP
+    delete memCoreMap;
+    #else
+    delete memBitMap;
+    #endif
+
 #endif
 
 #ifdef FILESYS_NEEDED

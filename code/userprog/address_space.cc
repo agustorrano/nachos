@@ -25,6 +25,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     Executable exe (executableFile);
     ASSERT(exe.CheckMagic());
 
+
     // How big is address space?
     unsigned size = exe.GetSize() + USER_STACK_SIZE;
 
@@ -32,7 +33,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= bitMap->CountClear());
+    #ifndef USE_SWAP
+        ASSERT(numPages <= memBitMap->CountClear());
+    #endif
+    /* si se usa swap creo que ese assert no hay que hacerlo. */
+
     // Check we are not trying to run anything too big -- at least until we
     // have virtual memory.
 
@@ -45,11 +50,19 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
         #ifndef USE_DEMANDLOADING
-        int x = bitMap->Find();
+        #ifndef USE_SWAP
+        int x = memBitMap->Find();
         if (x == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
             break;
         }
+        #else 
+        int x = memCoreMap->Find(currentThread->space, i);
+        if (x == -1) { 
+            DEBUG('a', "¿DO SWAP?.\n");
+            break;
+        }
+        #endif
         pageTable[i].physicalPage = x;
         pageTable[i].valid        = true;
         #else 
@@ -109,9 +122,15 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    #ifdef USE_SWAP
     for (unsigned i = 0; i < numPages; i++) {
-        bitMap->Clear(pageTable[i].physicalPage);
+        memCoreMap->Clear(pageTable[i].physicalPage);
     }
+    #else
+    for (unsigned i = 0; i < numPages; i++) {
+        memBitMap->Clear(pageTable[i].physicalPage);
+    }
+    #endif
     delete [] pageTable;
 }
 
@@ -185,7 +204,11 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     if (pageTable[vpn].valid == false) {
         DEBUG('a',"Loading VPN %d into memory.\n", vpn);
-        int physPage = bitMap->Find();
+        #ifdef USE_SWAP
+        int physPage = memCoreMap->Find(currentThread->space, vpn);
+        #else 
+        int physPage = memBitMap->Find();
+        #endif
         if (physPage == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
             ASSERT(0);

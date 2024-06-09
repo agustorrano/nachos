@@ -6,9 +6,10 @@ Coremap::Coremap(unsigned nitems)
     ASSERT(nitems > 0);
     
     frames = new Bitmap(nitems);
-    spaces = new AddressSpace*[nitems];
-    vpns = new unsigned[nitems];
     coremapSize = nitems;
+    
+    vpns = new unsigned[nitems];
+    spaces = new AddressSpace*[nitems];
 }
 
 Coremap::~Coremap()

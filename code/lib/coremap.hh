@@ -37,10 +37,10 @@ private:
 
     Bitmap *frames;
 
-    // The identification number for the addr space where the physical page belongs
+    // An array of addr spaces. The nth-physpage in the bitmap belongs to the nth-addressspace
     AddressSpace **spaces;   
     
-    /// The page number in virtual memory. en realidad creo que aloja varias, como seria?
+    // An array of virtual page numbers. The nth-physpage in the bitmap matches the nth-virtualpage
     unsigned *vpns;
 
     unsigned coremapSize;

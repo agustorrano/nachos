@@ -13,6 +13,7 @@
 #include "scheduler.hh"
 #include "lib/utility.hh"
 #include "lib/bitmap.hh"
+#include "lib/coremap.hh"
 #include "machine/interrupt.hh"
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
@@ -40,8 +41,15 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *synchConsole;
 extern Table <Thread*> *threadsTable;
-extern Bitmap *bitMap;
+
+#ifdef USE_SWAP
+extern Coremap *memCoreMap;
+#else
+extern Bitmap *memBitMap;
 #endif
+
+#endif
+
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
 #include "filesys/file_system.hh"
