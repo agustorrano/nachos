@@ -18,6 +18,10 @@
 /// and we have a single unsegmented page table.
 AddressSpace::AddressSpace(OpenFile *executable_file)
 {
+    #ifdef USE_SWAP
+    swapName = new char [FILE_NAME_MAX_LEN + 1];
+    #endif
+
     executableFile = executable_file;
 
     ASSERT(executableFile != nullptr);
@@ -49,6 +53,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
+
         #ifndef USE_DEMANDLOADING
         #ifndef USE_SWAP
         int x = memBitMap->Find();
@@ -56,18 +61,22 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             DEBUG('a', "Error: there are no free physical pages.\n");
             break;
         }
+
         #else 
         int x = memCoreMap->Find(currentThread->space, i);
         if (x == -1) { 
-            DEBUG('a', "¿DO SWAP?.\n");
-            break;
+            x = DoSwap();
+            DEBUG('a', "Number of frame %d.\n", x);
         }
         #endif
+
         pageTable[i].physicalPage = x;
         pageTable[i].valid        = true;
+
         #else 
         pageTable[i].valid        = false;
         #endif
+
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
@@ -85,6 +94,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     initDataVAddr = exe.GetInitDataAddr();
     DEBUG('a', "codeSize: %d, initDataSize: %d.\n", codeSize, initDataSize);
     DEBUG('a', "codeAddr: %d, initDataAddr: %d.\n", codeVAddr, initDataVAddr);
+
     #ifndef USE_DEMANDLOADING
 
     // Zero out the entire address space, to zero the unitialized data
@@ -103,6 +113,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
             exe.ReadCodeBlock(&mainMemory[physAddr], 1, i);
         }
     }
+
     if (initDataSize > 0) {
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               initDataVAddr, initDataSize);
@@ -126,11 +137,15 @@ AddressSpace::~AddressSpace()
     for (unsigned i = 0; i < numPages; i++) {
         memCoreMap->Clear(pageTable[i].physicalPage);
     }
+    fileSystem->Remove(swapName);
+    delete swapFile;
+
     #else
     for (unsigned i = 0; i < numPages; i++) {
         memBitMap->Clear(pageTable[i].physicalPage);
     }
     #endif
+
     delete [] pageTable;
 }
 
@@ -186,6 +201,7 @@ AddressSpace::RestoreState()
     #ifdef USE_TLB
     for (unsigned i = 0; i < TLB_SIZE; i++)
         machine->GetMMU()->tlb[i].valid = false;
+
     #else
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
@@ -204,15 +220,22 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     if (pageTable[vpn].valid == false) {
         DEBUG('a',"Loading VPN %d into memory.\n", vpn);
+
         #ifdef USE_SWAP
         int physPage = memCoreMap->Find(currentThread->space, vpn);
+        if (physPage == -1) {
+            x = DoSwap();
+            DEBUG('a', "SWAP: number of frame %d.\n", x);
+        }
+
         #else 
         int physPage = memBitMap->Find();
-        #endif
         if (physPage == -1) {
             DEBUG('a', "Error: there are no free physical pages.\n");
             ASSERT(0);
         }
+        #endif
+
         pageTable[vpn].physicalPage = physPage;   
         pageTable[vpn].valid = true;
         
@@ -230,6 +253,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
         uint32_t j;
         uint32_t readCode = 0;
         uint32_t readData = 0;
+
         if (virtAddr >= codeVAddr && virtAddr < codeVAddrFinal)
         {
             DEBUG('a', "Writing code from VPN [%d] into PPN [%d].\n", vpn, physPage);
@@ -269,3 +293,39 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
     }
     return pageTable[vpn];
 }
+
+#ifdef USE_SWAP
+int
+AddressSpace::PickVictim()
+{
+    int victim;
+    #ifdef PRPOLICY_FIFO
+    ASSERT(!memCoreMap->fifoFrames->IsEmpty())
+    victim = memCoreMap->fifoFrames->Pop();
+
+    #elif PRPOLICY_CLOCK
+    for (int clock = 0; clock < 4; clock++) {
+        
+    }
+
+    #else
+    // sleep(1); por las dudas
+    victim = random() % machine->GetNumPhysicalPages();
+    #endif
+
+    return victim;
+}
+
+int
+AddressSpace::DoSwap()
+{
+    int frame = PickVictim();
+    AddressSpace *addrSpace;
+    unsigned vpn;
+    memCoreMap->CheckFrame(frame, &addrSpace, &vpn);
+    OpenFile *swapFile = addrSpace->swapFile;
+    char *mainMemory = machine->mainMemory;
+    swapFile->WriteAt(mainMemory[frame * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
+    
+}
+#endif

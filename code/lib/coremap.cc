@@ -10,6 +10,14 @@ Coremap::Coremap(unsigned nitems)
     
     vpns = new unsigned[nitems];
     spaces = new AddressSpace*[nitems];
+    
+    #ifdef PRPOLICY_FIFO
+    fifoFrames = new List <int>;
+    #endif
+
+    #ifdef PRPOLICY_CLOCK
+    clockFrames = new List <int>;
+    #endif
 }
 
 Coremap::~Coremap()
@@ -17,6 +25,14 @@ Coremap::~Coremap()
     delete frames;
     delete [] spaces;
     delete [] vpns;
+
+    #ifdef PRPOLICY_FIFO
+    delete fifoFrames;
+    #endif
+
+    #ifdef PRPOLICY_CLOCK
+    delete clockFrames;
+    #endif
 }
 
 void
@@ -47,6 +63,15 @@ int
 Coremap::Find(AddressSpace *addrSpace, unsigned vpn)
 {
     int which = frames->Find();
+
+    #ifdef PRPOLICY_FIFO
+    fifoFrames->Update(which);
+    #endif
+
+    #ifdef PRPOLICY_CLOCK
+    clockFrames->Update(which);
+    #endif
+
     spaces[which] = addrSpace;
     vpns[which] = vpn;
     return which;
@@ -66,4 +91,12 @@ Coremap::Print()
             printf("Address Space: %p. Virtual Page Number: %d.\n", spaces[i], vpns[i]);
         }
     }
+}
+
+void 
+Coremap::CheckFrame(unsigned which, AddressSpace **addrSpace, unsigned *vpn)
+{
+    ASSERT(Test(which));
+    *addrSpace = spaces[which];
+    *vpn = vpns[which];
 }

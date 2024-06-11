@@ -414,6 +414,7 @@ SyscallHandler(ExceptionType _et)
             #endif 
             
             SpaceId sid = threadsTable->Add(newProc);
+            newProc->pid = sid;
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
                 delete space;

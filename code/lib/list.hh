@@ -61,6 +61,8 @@ public:
 
     void Remove(Item item);
 
+    void Update(Item item);
+
     /// Apply `func` to all elements in list.
     void Apply(void (*func)(Item));
 
@@ -213,6 +215,42 @@ List<Item>::Remove(Item item)
             return;
         }
     }
+}
+
+template <class Item>
+void
+List<Item>::Update(Item item)
+{
+    ListNode *ptr;
+    for (ptr = first, *prev_ptr = nullptr;
+         ptr != nullptr;
+         prev_ptr = ptr, ptr = ptr->next) {
+        if (item == ptr->item) {
+            if (prev_ptr) {
+                prev_ptr->next = ptr->next;
+            }
+            if (first == ptr) {
+                first = ptr->next;
+            }
+            if (last == ptr) {
+                last = prev_ptr;
+            }
+            break;
+        }
+    }
+
+    if (ptr == nullptr)
+        ptr = new ListNode(item, 0);
+    
+    if (IsEmpty()) {
+        first = ptr;
+        last = ptr;
+    } else {  // Put it after last.
+        last->next = ptr;
+        last = ptr;
+    }
+    
+    return;
 }
 
 /// Apply a function to each item on the list, by walking through the list,

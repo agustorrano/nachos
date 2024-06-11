@@ -55,6 +55,11 @@ public:
     uint32_t initDataSize;
     uint32_t codeVAddr;
     uint32_t initDataVAddr;
+
+    #ifdef USE_SWAP
+    int PickVictim();
+    int DoSwap();
+    #endif
     
 private:
 
@@ -64,6 +69,11 @@ private:
 
     /// Number of pages in the virtual address space.
     unsigned numPages;
+
+    #ifdef USE_SWAP
+    OpenFile* swapFile;
+    char* swapName;
+    #endif
 
 };
 

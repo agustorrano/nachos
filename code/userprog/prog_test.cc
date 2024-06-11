@@ -33,6 +33,13 @@ StartProcess(const char *filename)
     AddressSpace *space = new AddressSpace(executable);
     currentThread->space = space;
 
+    #ifdef USE_SWAP
+    int pid = currentThread->pid;
+    sprintf(swapName, "SWAP.%d", pid);
+    space->swapFile = fileSystem->Open(swapName);
+    delete [] swapName;
+    #endif
+
     #ifndef USE_DEMANDLOADING 
     delete executable;
     #endif

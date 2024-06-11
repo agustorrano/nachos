@@ -169,6 +169,8 @@ private:
     int priority;
     int oldPriority;
 
+    int pid;
+
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
 

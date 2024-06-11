@@ -5,6 +5,7 @@
 #include "syscall.h"
 #include "bitmap.hh"
 #include "utility.hh"
+#include "list.hh"
 #include "userprog/address_space.hh"
 
 class Coremap {
@@ -33,9 +34,19 @@ public:
     /// Print contents of coremap entry.
     void Print();
 
+    void CheckFrame(unsigned which, AddressSpace **addrSpace, unsigned *vpn);
+
 private:
 
     Bitmap *frames;
+
+    #ifdef PRPOLICY_FIFO
+    List <int> *fifoFrames;
+    #endif
+
+    #ifdef PRPOLICY_CLOCK
+    List <int> *clockFrames;
+    #endif
 
     // An array of addr spaces. The nth-physpage in the bitmap belongs to the nth-addressspace
     AddressSpace **spaces;   
