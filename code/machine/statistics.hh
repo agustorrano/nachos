@@ -52,6 +52,14 @@ public:
     unsigned long numPageHits;
 #endif
 
+#ifdef USE_SWAP 
+    /// Number of sends to swap.
+    unsigned long numSwapIn;
+    
+    /// Number of brings from swap.
+    unsigned long numSwapOut;
+#endif 
+
 #ifdef DFS_TICKS_FIX
     /// Number of times the tick count gets reset.
     unsigned long tickResets;

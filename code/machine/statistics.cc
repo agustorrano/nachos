@@ -27,6 +27,10 @@ Statistics::Statistics()
 #ifdef USE_TLB 
     numPageHits = 0;
 #endif
+#ifdef USE_SWAP
+    numSwapIn = 0;
+    numSwapOut = 0;
+#endif
 }
 
 /// Print performance metrics, when we have finished everything at system
@@ -50,6 +54,9 @@ Statistics::Print()
     printf(", hits %lu\n", (numPageHits - numPageFaults));
 #else
     printf("\n");
+#ifdef USE_SWAP
+    printf("Swap: sent to swap %lu, brought back %lu\n", numSwapIn, numSwapOut);
+#endif 
 #endif
 }
 

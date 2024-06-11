@@ -297,24 +297,49 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 #ifdef USE_SWAP
 int
 AddressSpace::PickVictim()
-{
+{   
+    stats->numSwapIn++;
     int victim;
+    numPages = machine->GetNumPhysicalPages();
     #ifdef PRPOLICY_FIFO
     ASSERT(!memCoreMap->fifoFrames->IsEmpty())
     victim = memCoreMap->fifoFrames->Pop();
 
     #elif PRPOLICY_CLOCK
+    AddressSpace* space;
+    unsigned vpn;
     for (int clock = 0; clock < 4; clock++) {
-        
+        for (int frame = 0; frame < numPages; frame++) {
+            memCoreMap->CheckFrame(frame, &space, &vpn);
+            if (clock == 0 || clock == 2) {
+                if (space->pageTable[vpn].use == 0 && space->pageTable[vpn].dirty == 0) {
+                    victim = frame;
+                    return victim;
+                }
+
+            }
+            else if (clock == 1) {
+                if (space->pageTable[vpn].use == 0 && space->pageTable[vpn].dirty == 1) {
+                    victim = frame;
+                    return victim;
+                }
+                else space->pageTable[vpn].use = 0;
+            }
+            else {// clock == 3
+                victim = frame;
+                return victim;
+            }
+        }
     }
 
     #else
     // sleep(1); por las dudas
-    victim = random() % machine->GetNumPhysicalPages();
+    victim = random() % numPages;
     #endif
 
     return victim;
 }
+
 
 int
 AddressSpace::DoSwap()
