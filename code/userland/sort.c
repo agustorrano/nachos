@@ -34,9 +34,9 @@ main(void)
             }
         }
     }
-    char buffer [10];
+/*     char buffer [10];
     itoa(A[0], buffer);
-    putss (buffer);
+    putss (buffer); */
     // And then we're done -- should be 0!
     return A[0];
 }

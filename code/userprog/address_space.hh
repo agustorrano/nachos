@@ -16,7 +16,9 @@
 #include <cstdint>
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
-
+#include "filesys/directory_entry.hh"
+#include "lib/bitmap.hh"
+#include "swap.hh"
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
 
@@ -55,12 +57,11 @@ public:
     uint32_t initDataSize;
     uint32_t codeVAddr;
     uint32_t initDataVAddr;
-
-    #ifdef USE_SWAP
-    int PickVictim();
-    int DoSwap();
-    #endif
     
+    #ifdef USE_SWAP
+    char* swapName;
+    OpenFile* swapFile;
+    #endif
 private:
 
     OpenFile* executableFile;
@@ -71,10 +72,8 @@ private:
     unsigned numPages;
 
     #ifdef USE_SWAP
-    OpenFile* swapFile;
-    char* swapName;
+    Bitmap *swapMap;
     #endif
-
 };
 
 

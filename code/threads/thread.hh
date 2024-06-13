@@ -149,6 +149,8 @@ public:
 
     void RestorePriority();
 
+    int pid;
+
 private:
     // Some of the private data for this class is listed above.
 
@@ -168,8 +170,6 @@ private:
 
     int priority;
     int oldPriority;
-
-    int pid;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

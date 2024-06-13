@@ -221,7 +221,7 @@ template <class Item>
 void
 List<Item>::Update(Item item)
 {
-    ListNode *ptr;
+    ListNode *ptr, *prev_ptr;
     for (ptr = first, *prev_ptr = nullptr;
          ptr != nullptr;
          prev_ptr = ptr, ptr = ptr->next) {
@@ -249,7 +249,6 @@ List<Item>::Update(Item item)
         last->next = ptr;
         last = ptr;
     }
-    
     return;
 }
 

@@ -35,9 +35,8 @@ StartProcess(const char *filename)
 
     #ifdef USE_SWAP
     int pid = currentThread->pid;
-    sprintf(swapName, "SWAP.%d", pid);
-    space->swapFile = fileSystem->Open(swapName);
-    delete [] swapName;
+    sprintf(space->swapName, "SWAP.%d", pid);
+    space->swapFile = fileSystem->Open(space->swapName);
     #endif
 
     #ifndef USE_DEMANDLOADING 

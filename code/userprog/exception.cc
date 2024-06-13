@@ -447,7 +447,6 @@ SyscallHandler(ExceptionType _et)
     IncrementPC();
 }
 
-
 static void
 PageFaultHandler (ExceptionType _et)
 {
@@ -457,7 +456,6 @@ PageFaultHandler (ExceptionType _et)
     int i = stats->numPageFaults++ % TLB_SIZE;
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
     machine->GetMMU()->tlb[i] = page; 
-    // stats->numSwapOut++;
 }
 
 static void
