@@ -80,12 +80,15 @@ public:
     /// Remove first item from list.
     Item SortedPop(int *keyPtr);
 
+    int GetSizeList();
+
 private:
 
     typedef ListElement<Item> ListNode;
 
     ListNode *first;  ///< Head of the list, null if list is empty.
     ListNode *last;   ///< Last element of list.
+    int size;
 };
 
 /// Initialize a list element, so it can be added somewhere on a list.
@@ -107,6 +110,7 @@ template <class Item>
 List<Item>::List()
 {
     first = last = nullptr;
+    size = 0;
 }
 
 /// Prepare a list for deallocation.
@@ -144,6 +148,8 @@ List<Item>::Append(Item item)
         last->next = element;
         last = element;
     }
+
+    size++;
 }
 
 /// Put an "item" on the front of the list.
@@ -167,6 +173,8 @@ List<Item>::Prepend(Item item)
         element->next = first;
         first = element;
     }
+
+    size++;
 }
 
 /// Get a copy of the first `item` form the front of the list.
@@ -212,6 +220,7 @@ List<Item>::Remove(Item item)
                 last = prev_ptr;
             }
             delete ptr;
+            size--;
             return;
         }
     }
@@ -353,7 +362,15 @@ List<Item>::SortedPop(int *keyPtr)
         *keyPtr = element->key;
     }
     delete element;
+    size--;
     return thing;
+}
+
+template <class Item>
+int
+List<Item>::GetSizeList()
+{
+    return size;
 }
 
 

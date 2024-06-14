@@ -102,7 +102,9 @@ USERPROG_HDR = userprog/address_space.hh            \
                machine/machine.hh                   \
                machine/mmu.hh                       \
                machine/translation_entry.hh         \
-               machine/synch_console.hh
+               machine/synch_console.hh             \
+               userprog/swap.hh
+
 USERPROG_SRC = userprog/address_space.cc            \
                userprog/args.cc                     \
                userprog/debugger.cc                 \
@@ -121,7 +123,8 @@ USERPROG_SRC = userprog/address_space.cc            \
                machine/machine.cc                   \
                machine/mips_sim.cc                  \
                machine/mmu.cc                       \
-               machine/synch_console.cc
+               machine/synch_console.cc             \
+               userprog/swap.cc
 
 VMEM_HDR =
 VMEM_SRC =

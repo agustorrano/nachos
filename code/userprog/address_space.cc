@@ -41,7 +41,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     #else
         ASSERT(numPages <= memBitMap->CountClear());
     #endif
-    /* si se usa swap creo que ese assert no hay que hacerlo. */
 
     // Check we are not trying to run anything too big -- at least until we
     // have virtual memory.
@@ -140,6 +139,7 @@ AddressSpace::~AddressSpace()
     }
     fileSystem->Remove(swapName);
     delete swapFile;
+    delete swapMap;
 
     #else
     for (unsigned i = 0; i < numPages; i++) {
@@ -281,6 +281,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
                 }
                 virtAddr = virtAddr + readCode; // actualizo a donde quiero seguir leyendo
             }
+
             if (virtAddr >= initDataVAddr  && virtAddr < initDataVAddrFinal)
             {
                 DEBUG('a', "Writing data from VPN [%d] into PPN [%d].\n", vpn, physPage);
@@ -305,7 +306,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
                 }
             }
         }
-        else {// page is in swap 
+        else { // page is in swap 
             #ifdef USE_SWAP
             DoSwapIn(this, vpn);
             pageTable[vpn].valid = true;

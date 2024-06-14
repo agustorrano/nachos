@@ -1,10 +1,14 @@
+#ifdef USE_SWAP
 #ifndef NACHOS_SWAP__HH
 #define NACHOS_SWAP__HH
 
-#include "address_space.hh"
+#include <stdlib.h>
 
-int PickVictim(AddressSpace* space, unsigned vpn);
+class AddressSpace;
+
+int PickVictim(AddressSpace** space, unsigned* vpn);
 void DoSwapIn(AddressSpace* space, unsigned vpn);
 int DoSwapOut();
 
+#endif
 #endif

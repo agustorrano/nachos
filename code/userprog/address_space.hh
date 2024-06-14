@@ -61,7 +61,9 @@ public:
     #ifdef USE_SWAP
     char* swapName;
     OpenFile* swapFile;
+    Bitmap *swapMap;
     #endif
+
 private:
 
     OpenFile* executableFile;
@@ -70,10 +72,6 @@ private:
 
     /// Number of pages in the virtual address space.
     unsigned numPages;
-
-    #ifdef USE_SWAP
-    Bitmap *swapMap;
-    #endif
 };
 
 
