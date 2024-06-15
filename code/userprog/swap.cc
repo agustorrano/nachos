@@ -8,16 +8,18 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     int victim;
     unsigned numPhysPages = machine->GetNumPhysicalPages();
     #ifdef PRPOLICY_FIFO
+    DEBUG('w', "Pick Victim FIFO.\n");
     ASSERT(!memCoreMap->fifoFrames->IsEmpty())
     victim = memCoreMap->fifoFrames->Pop();
     memCoreMap->fifoFrames->Append(victim);
-    // quiero hacer un pop? porque lo estoy sacando de la fifo. no deberia pasarlo al final?
+    
     #elif PRPOLICY_CLOCK
-    int frame, i;
+    DEBUG('w', "Pick Victim CLOCK.\n");
+    int frame;
     for (int clock = 0; clock < 4; clock++) {
-        // esto esta mal. estamos recorriendo la memoria 
-        // secuencialmente en vez de usar clockFrames
-        for (frame = memCoreMap->clockFrames->Head(), i = 0; i < memCoreMap->clockFrames->GetSizeList(); frame = memCoreMap->clockFrames->Head(), i++) {
+        int size = memCoreMap->clockFrames->GetSizeList()
+        for (int i = 0; i < size; i++) {
+            frame = memCoreMap->clockFrames->Head();
             memCoreMap->CheckFrame(frame, spaceDir, vpnDir);
             AddressSpace *space = *spaceDir;
             unsigned vpn = *vpnDir;
@@ -46,16 +48,19 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     }
 
     #else
+    DEBUG('w', "Pick Victim RANDOM.\n");
     // sleep(1); por las dudas
     victim = random() % numPhysPages;
     #endif
     memCoreMap->CheckFrame(victim, spaceDir, vpnDir);
+    DEBUG('w', "Victim picked: %d.\n", victim);
     return victim;
 }
 
 
 int DoSwapOut()
 {
+    DEBUG('w', "Swap Out.\n");
     stats->numSwapOut++;
     AddressSpace *space;
     unsigned vpn;
@@ -71,6 +76,7 @@ int DoSwapOut()
 
 void DoSwapIn(AddressSpace* space, unsigned vpn)
 {
+  DEBUG('w', "Swap In.\n");
   stats->numSwapIn++;
   int physPage = memCoreMap->Find(currentThread->space, vpn);
   if (physPage == -1) physPage = DoSwapOut();

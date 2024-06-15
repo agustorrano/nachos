@@ -66,7 +66,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         int x = memCoreMap->Find(currentThread->space, i);
         if (x == -1) { 
             x = DoSwapIn();
-            DEBUG('a', "Number of frame %d.\n", x);
+            DEBUG('w', "Number of frame %d.\n", x);
         }
         #endif
 
@@ -186,9 +186,10 @@ void
 AddressSpace::SaveState()
 {   
     #ifdef USE_TLB
+    //machine->GetMMU()->PrintTLB();
     TranslationEntry page;
     for (unsigned i = 0; i < TLB_SIZE; i++) {
-        machine->GetMMU()->tlb[i] = page; 
+        page = machine->GetMMU()->tlb[i];
         if (page.valid) {
             pageTable[page.virtualPage].use = page.use;
             pageTable[page.virtualPage].dirty = page.dirty;
@@ -221,7 +222,7 @@ AddressSpace::GetPageTable()
 {
    return pageTable;
 }
-
+ 
 TranslationEntry
 AddressSpace::CheckPageinMemory(uint32_t vpn)
 {

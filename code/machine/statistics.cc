@@ -54,9 +54,9 @@ Statistics::Print()
     printf(", hits %lu\n", (numPageHits - numPageFaults));
 #else
     printf("\n");
+#endif
 #ifdef USE_SWAP
     printf("Swap: sent to swap %lu, brought back %lu\n", numSwapIn, numSwapOut);
-#endif 
 #endif
 }
 

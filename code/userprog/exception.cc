@@ -455,15 +455,19 @@ PageFaultHandler (ExceptionType _et)
     DEBUG('e', "Page [%d] Fault.\n", vpn);
     int i = stats->numPageFaults++ % TLB_SIZE;
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
+    machine->GetMMU()->tlb[i] = page; 
+    //machine->GetMMU()->PrintTLB();
+    currentThread->space->SaveState();
+    /*
     #ifdef USE_TLB
     for (unsigned i = 0; i < TLB_SIZE; i++) {
-        machine->GetMMU()->tlb[i] = page; 
+        page = machine->GetMMU()->tlb[i]; 
         if (page.valid) {
             pageTable[page.virtualPage].use = page.use;
             pageTable[page.virtualPage].dirty = page.dirty;
         }
-    }
     #endif
+    } */
 }
 
 static void
