@@ -1,3 +1,4 @@
+#include "../userprog/syscall.h"
 #include "lib.c"
 
 int main(int argc, char *argv[])
@@ -15,12 +16,15 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  char buffer[2];
-  buffer[1] = '\0';
-  while(Read(buffer, 1, o) > 0) 
-    putss(buffer);
+  char buffer[1];
+  // buffer[1] = '\0';
+  while(Read(buffer, 1, o) > 0) {
+    putss("reading\n");
+    Write(buffer, 1, 1);
+  }  
+  
   
   Close(o);
 
-  return 0;
+  return 1;
 }

@@ -206,7 +206,7 @@ Initialize(int argc, char **argv)
     synchConsole = new SynchConsole(nullptr, nullptr);
 
     threadsTable = new Table<Thread*>;
-    //threadsTable->Add(currentThread);
+    threadsTable->Add(currentThread);
 
 #ifdef USE_SWAP
     memCoreMap = new Coremap(numPhysicalPages);

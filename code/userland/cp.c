@@ -1,15 +1,14 @@
 #include "lib.c"
-#define FILE_NAME_MAX_LEN 9 // esta definido pero no se como incluirlo
-                            // en directory_entry.hh
+
 int main(int argc, char *argv[])
 {
   // Tiene que haber al menos dos argumuentos
-  if (argc < 2) {
+  if (argc < 3) {
     putss("Error: invalid number of arguments.\n");
     return -1;
   }
-  char* fileName = argv[0];
-  char* copyName = argv[1];
+  char* fileName = argv[1];
+  char* copyName = argv[2];
   
   OpenFileId of = Open(fileName);
   if (of == -1) {
@@ -27,10 +26,11 @@ int main(int argc, char *argv[])
     putss("Error: open.\n");
     return -1;
   }
-  char buffer[FILE_NAME_MAX_LEN];
-  int bytesRead = Read(buffer, FILE_NAME_MAX_LEN, of);
-  Write(buffer, bytesRead, oc);
+  char buffer[1];
+  while (Read(buffer, 1, of) > 0)
+    Write(buffer, 1, oc);
+  
   Close(of);
   Close(oc);
-  return 0;
+  return 1;
 }

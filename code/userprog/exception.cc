@@ -315,7 +315,14 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            DEBUG('e', "`Join` requested.\n");
+
+            if (!threadsTable->HasKey(sid)) {
+                DEBUG('e', "Error: pid %d does not exists.\n", sid);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            DEBUG('e', "`Join` requested with pid %d.\n", sid);
             Thread* t = threadsTable->Remove(sid);
             int st;
             t->Join(&st);
