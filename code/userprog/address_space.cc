@@ -19,7 +19,6 @@
 /// and we have a single unsegmented page table.
 AddressSpace::AddressSpace(OpenFile *executable_file)
 {
-
     executableFile = executable_file;
 
     ASSERT(executableFile != nullptr);
@@ -65,7 +64,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         #else 
         int x = memCoreMap->Find(currentThread->space, i);
         if (x == -1) { 
-            x = DoSwapIn();
+            x = DoSwapOut();
             DEBUG('w', "Number of frame %d.\n", x);
         }
         #endif
@@ -239,8 +238,8 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             #ifdef USE_SWAP
             int physPage = memCoreMap->Find(currentThread->space, vpn);
             if (physPage == -1) {
-                int x = DoSwapOut();
-                DEBUG('a', "SWAP: number of frame %d.\n", x);
+                physPage = DoSwapOut();
+                DEBUG('a', "SWAP: number of frame %d.\n", physPage);
             }
 
             #else 
@@ -309,6 +308,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
         }
         else { // page is in swap 
             #ifdef USE_SWAP
+            DEBUG('w', "PAGE IN SWAP.\n");
             DoSwapIn(this, vpn);
             pageTable[vpn].valid = true;
             #endif

@@ -36,7 +36,15 @@ StartProcess(const char *filename)
     #ifdef USE_SWAP
     int pid = currentThread->pid;
     sprintf(space->swapName, "SWAP.%d", pid);
-    space->swapFile = fileSystem->Open(space->swapName);
+    //unsigned initialSize = space->numPages * PAGE_SIZE;
+    unsigned initialSize = 30 * PAGE_SIZE;
+    fileSystem->Create(space->swapName, initialSize);
+    OpenFile* swapFile = fileSystem->Open(space->swapName);
+    if (swapFile == nullptr) {
+        printf("Unable to open file %s\n", space->swapName);
+        return;
+    }
+    space->swapFile = swapFile;
     #endif
 
     #ifndef USE_DEMANDLOADING 

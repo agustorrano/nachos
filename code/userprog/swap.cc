@@ -68,6 +68,7 @@ int DoSwapOut()
     char *mainMemory = machine->mainMemory;
     TranslationEntry *pageTable = space->GetPageTable();
     if (pageTable[vpn].dirty || !space->swapMap->Test(vpn)) {
+      DEBUG('w', "Really writing to swap.\n");  
       space->swapFile->WriteAt(&mainMemory[frame * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
       space->swapMap->Mark(vpn);
     }
