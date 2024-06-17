@@ -185,7 +185,6 @@ void
 AddressSpace::SaveState()
 {   
     #ifdef USE_TLB
-    //machine->GetMMU()->PrintTLB();
     TranslationEntry page;
     for (unsigned i = 0; i < TLB_SIZE; i++) {
         page = machine->GetMMU()->tlb[i];

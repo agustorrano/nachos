@@ -464,11 +464,14 @@ PageFaultHandler (ExceptionType _et)
         int x = currentThread->space->swapMap->Test(vpn);
         if (x) DEBUG('e', "Page is in swap.\n");
     #endif
-    int i = stats->numPageFaults++ % TLB_SIZE;
+    int i = stats->numPageFaults++ % TLB_SIZE; 
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
+    if (machine->GetMMU()->tlb[i].valid) {
+        TranslationEntry* pageTable = currentThread->space->GetPageTable();
+        pageTable[machine->GetMMU()->tlb[i].virtualPage].use = machine->GetMMU()->tlb[i].use;
+        pageTable[machine->GetMMU()->tlb[i].virtualPage].dirty = machine->GetMMU()->tlb[i].dirty;
+    }
     machine->GetMMU()->tlb[i] = page; 
-    //machine->GetMMU()->PrintTLB();
-    currentThread->space->SaveState();
 }
 
 static void
