@@ -36,8 +36,9 @@ StartProcess(const char *filename)
     #ifdef USE_SWAP
     int pid = currentThread->pid;
     sprintf(space->swapName, "SWAP.%d", pid);
-    //unsigned initialSize = space->numPages * PAGE_SIZE;
-    unsigned initialSize = 30 * PAGE_SIZE;
+    unsigned numPages = space->GetNumPages();
+    unsigned initialSize = numPages * PAGE_SIZE;
+    //unsigned initialSize = 30 * PAGE_SIZE;
     fileSystem->Create(space->swapName, initialSize);
     OpenFile* swapFile = fileSystem->Open(space->swapName);
     if (swapFile == nullptr) {

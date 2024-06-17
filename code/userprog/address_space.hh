@@ -51,6 +51,7 @@ public:
 
     TranslationEntry* GetPageTable();
 
+    unsigned GetNumPages();
     TranslationEntry CheckPageinMemory (uint32_t vpn);
 
     uint32_t codeSize;

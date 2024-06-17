@@ -221,6 +221,13 @@ AddressSpace::GetPageTable()
 {
    return pageTable;
 }
+
+unsigned 
+AddressSpace::GetNumPages()
+{
+    return numPages;
+}
+
  
 TranslationEntry
 AddressSpace::CheckPageinMemory(uint32_t vpn)

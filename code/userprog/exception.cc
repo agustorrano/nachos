@@ -460,8 +460,10 @@ PageFaultHandler (ExceptionType _et)
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
     uint32_t vpn = DivRoundDown(vAddr, PAGE_SIZE);
     DEBUG('e', "Page [%d] Fault.\n", vpn);
-    int x = currentThread->space->swapMap->Test(vpn);
-    if (x) DEBUG('e', "Page is in swap.\n");
+    #ifdef USE_SWAP
+        int x = currentThread->space->swapMap->Test(vpn);
+        if (x) DEBUG('e', "Page is in swap.\n");
+    #endif
     int i = stats->numPageFaults++ % TLB_SIZE;
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
     machine->GetMMU()->tlb[i] = page; 
