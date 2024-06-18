@@ -71,9 +71,10 @@ Coremap::Find(AddressSpace *addrSpace, unsigned vpn)
     #ifdef PRPOLICY_CLOCK
     clockFrames->Update(which);
     #endif
-
-    spaces[which] = addrSpace;
-    vpns[which] = vpn;
+    if (which != -1) {
+        spaces[which] = addrSpace;
+        vpns[which] = vpn;
+    }
     return which;
 }
 

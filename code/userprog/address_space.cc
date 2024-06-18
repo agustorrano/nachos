@@ -65,6 +65,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         int x = memCoreMap->Find(currentThread->space, i);
         if (x == -1) { 
             x = DoSwapOut();
+            memCoreMap->Mark(x, this, i);
             DEBUG('w', "Number of frame %d.\n", x);
         }
         #endif
@@ -233,6 +234,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     int flag = 0;
     if (!pageTable[vpn].valid) { // page's not in memory
+        DEBUG('e', "Page is not in memory.\n");
         #ifdef USE_SWAP 
             flag = !swapMap->Test(vpn);
         #else
@@ -245,7 +247,8 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             int physPage = memCoreMap->Find(currentThread->space, vpn);
             if (physPage == -1) {
                 physPage = DoSwapOut();
-                DEBUG('a', "SWAP: number of frame %d.\n", physPage);
+                memCoreMap->Mark(physPage, this, (unsigned)vpn);
+                DEBUG('w', "SWAP: number of frame %d.\n", physPage);
             }
 
             #else 
@@ -320,5 +323,6 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             #endif
         }
     }
+    DEBUG('e', "Page %d is in memory, at %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
     return pageTable[vpn];
 }

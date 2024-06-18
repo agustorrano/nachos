@@ -53,7 +53,7 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     victim = random() % numPhysPages;
     #endif
     memCoreMap->CheckFrame(victim, spaceDir, vpnDir);
-    DEBUG('w', "Victim picked: %d.\n", victim);
+    DEBUG('w', "Victim picked: Frame: %d, Vpn: %d.\n", victim, *vpnDir);
     return victim;
 }
 
@@ -70,6 +70,7 @@ int DoSwapOut()
     if (pageTable[vpn].dirty || !space->swapMap->Test(vpn)) {
       DEBUG('w', "Really writing to swap.\n");  
       space->swapFile->WriteAt(&mainMemory[frame * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
+      DEBUG('w', "after write At.\n");
       space->swapMap->Mark(vpn);
     }
     return frame;
