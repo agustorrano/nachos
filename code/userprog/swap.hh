@@ -7,7 +7,7 @@
 class AddressSpace;
 
 int PickVictim(AddressSpace** space, unsigned* vpn);
-void DoSwapIn(AddressSpace* space, unsigned vpn);
+int DoSwapIn(unsigned vpn);
 int DoSwapOut();
 
 #endif

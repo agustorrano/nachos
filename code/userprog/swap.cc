@@ -67,6 +67,7 @@ int DoSwapOut()
     int frame = PickVictim(&space, &vpn);
     char *mainMemory = machine->mainMemory;
     TranslationEntry *pageTable = space->GetPageTable();
+    pageTable[vpn].valid = false;
     if (pageTable[vpn].dirty || !space->swapMap->Test(vpn)) {
       DEBUG('w', "Really writing to swap.\n");  
       space->swapFile->WriteAt(&mainMemory[frame * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
@@ -76,14 +77,18 @@ int DoSwapOut()
     return frame;
 }
 
-void DoSwapIn(AddressSpace* space, unsigned vpn)
+int DoSwapIn(unsigned vpn)
 {
   DEBUG('w', "Swap In.\n");
   stats->numSwapIn++;
   int physPage = memCoreMap->Find(currentThread->space, vpn);
-  if (physPage == -1) physPage = DoSwapOut();
+  if (physPage == -1) {
+    physPage = DoSwapOut();
+    memCoreMap->Mark(physPage, currentThread->space, vpn);
+  }
   char *mainMemory = machine->mainMemory;
-  space->swapFile->ReadAt(&mainMemory[physPage * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
+  currentThread->space->swapFile->ReadAt(&mainMemory[physPage * PAGE_SIZE], PAGE_SIZE, vpn * PAGE_SIZE);
+  return physPage;
 }
 
 #endif

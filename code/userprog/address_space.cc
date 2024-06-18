@@ -66,7 +66,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
         if (x == -1) { 
             x = DoSwapOut();
             memCoreMap->Mark(x, this, i);
-            DEBUG('w', "Number of frame %d.\n", x);
         }
         #endif
 
@@ -248,7 +247,6 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             if (physPage == -1) {
                 physPage = DoSwapOut();
                 memCoreMap->Mark(physPage, this, (unsigned)vpn);
-                DEBUG('w', "SWAP: number of frame %d.\n", physPage);
             }
 
             #else 
@@ -317,12 +315,14 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
         }
         else { // page is in swap 
             #ifdef USE_SWAP
-            DEBUG('w', "PAGE IN SWAP.\n");
-            DoSwapIn(this, vpn);
+            DEBUG('w', "Bringing page from swap.\n");
+            int physPage = DoSwapIn(vpn);
             pageTable[vpn].valid = true;
+            pageTable[vpn].dirty = false;
+            pageTable[vpn].physicalPage = physPage;
             #endif
         }
     }
-    DEBUG('e', "Page %d is in memory, at %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
+    DEBUG('e', "Page %d is in memory, at frame %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
     return pageTable[vpn];
 }
