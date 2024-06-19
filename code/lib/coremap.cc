@@ -56,7 +56,8 @@ Coremap::Clear(unsigned which)
 bool
 Coremap::Test(unsigned which) const
 {
-    return frames->Test(which) && spaces[which] != nullptr;
+    return frames->Test(which);
+    //return frames->Test(which) && spaces[which] != nullptr;
 }
 
 int 
@@ -64,14 +65,14 @@ Coremap::Find(AddressSpace *addrSpace, unsigned vpn)
 {
     int which = frames->Find();
 
-    #ifdef PRPOLICY_FIFO
-    fifoFrames->Update(which);
-    #endif
-
-    #ifdef PRPOLICY_CLOCK
-    clockFrames->Update(which);
-    #endif
     if (which != -1) {
+        #ifdef PRPOLICY_FIFO
+        fifoFrames->Update(which);
+        #endif
+
+        #ifdef PRPOLICY_CLOCK
+        clockFrames->Update(which);
+        #endif
         spaces[which] = addrSpace;
         vpns[which] = vpn;
     }
@@ -89,7 +90,10 @@ Coremap::Print()
 {
     for (unsigned i = 0; i < coremapSize; i++) {
         if (Test(i)) {
-            printf("Address Space: %p. Virtual Page Number: %d.\n", spaces[i], vpns[i]);
+            printf("[%d]: Address Space: %p. Virtual Page Number: %d.\n", i, spaces[i], vpns[i]);
+        }
+        else {
+            printf("[%d]: Empty.\n", i);
         }
     }
 }
