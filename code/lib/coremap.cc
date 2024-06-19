@@ -109,7 +109,7 @@ Coremap::CheckFrame(unsigned which, AddressSpace **addrSpace, unsigned *vpn)
     *vpn = vpns[which];
 }
 
-#ifdef PRPOLICY_FIFO || PRPOLICY_CLOCK
+#ifdef PRPOLICY_FIFO
 void
 Coremap::PrintList()
 {

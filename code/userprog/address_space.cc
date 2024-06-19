@@ -312,12 +312,15 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             int physPage = DoSwapIn(vpn);
             pageTable[vpn].valid = true;
             pageTable[vpn].dirty = false;
+            pageTable[vpn].use = false;
             pageTable[vpn].physicalPage = physPage;
             #endif
         }
-        #ifdef USE_SWAP
-        memCoreMap->PrintList();
-        #endif
+        //#ifdef USE_SWAP
+        //#ifdef PRPOLICY_FIFO
+        //memCoreMap->PrintList();
+        //#endif
+        //#endif
     }
     DEBUG('a', "Page %d is in memory, at frame %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
     return pageTable[vpn];

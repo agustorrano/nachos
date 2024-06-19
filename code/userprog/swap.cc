@@ -19,11 +19,11 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     int frame;
     for (int clock = 0; clock < 4; clock++) {
         for (unsigned i = 0; i < numPhysPages; i++) {
+            frame = memCoreMap->clockFrames->Head();
+            memCoreMap->CheckFrame(frame, spaceDir, vpnDir);
             AddressSpace *space = *spaceDir;
             unsigned vpn = *vpnDir;
             TranslationEntry* pageTable = space->GetPageTable();
-            frame = memCoreMap->clockFrames->Head();
-            memCoreMap->CheckFrame(frame, spaceDir, vpnDir);
             if (clock == 0 || clock == 2) {
                 if (pageTable[vpn].use == 0 && pageTable[vpn].dirty == 0) {
                     victim = frame;

@@ -1,1 +1,26 @@
-Completar
+ALGORITMO FIFO
+matmult con FIFO
+Paging: faults 62635, hits 684424
+Swap: sent to swap 63, brought back 78
+
+sort con FIFO
+Paging: faults 2623461, hits 42490418
+Swap: sent to swap 4333, brought back 4339
+
+ALGORITMO MEJORADO DEL RELOJ
+matmult con CLOCK
+Paging: faults 62631, hits 684426
+Swap: sent to swap 38, brought back 53
+
+sort con CLOCK
+Paging: faults 2623269, hits 42490360
+Swap: sent to swap 3829, brought back 3835
+
+64 PÁGINAS FÍSICAS (aproximación al algoritmo óptimo)
+matmult con CLOCK -m 64
+Paging: faults 62631, hits 684426
+Swap: sent to swap 0, brought back 0
+
+sort con CLOCK -m 64
+Paging: faults 2623250, hits 42490365
+Swap: sent to swap 0, brought back 0

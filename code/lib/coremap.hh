@@ -38,15 +38,12 @@ public:
 
     #ifdef PRPOLICY_FIFO
     List <int> *fifoFrames;
+    void PrintList();
+    static void printInt(int x);
     #endif
 
     #ifdef PRPOLICY_CLOCK
     List <int> *clockFrames;
-    #endif
-
-    #ifdef PRPOLICY_FIFO || PRPOLICY_CLOCK
-    void PrintList();
-    static void printInt(int x);
     #endif
 
 private:
