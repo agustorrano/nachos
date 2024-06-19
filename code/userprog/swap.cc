@@ -3,10 +3,10 @@
 #include "address_space.hh"
 #include "threads/system.hh"
 #include <stdio.h>
+
 int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir) 
 {
     int victim;
-    unsigned numPhysPages = machine->GetNumPhysicalPages();
     #ifdef PRPOLICY_FIFO
     //DEBUG('w', "Pick Victim FIFO.\n");
     ASSERT(!memCoreMap->fifoFrames->IsEmpty());
@@ -14,6 +14,8 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     memCoreMap->fifoFrames->Append(victim);
     
     #elif PRPOLICY_CLOCK
+    //DEBUG('w', "Pick Victim CLOCK.\n");
+    unsigned numPhysPages = machine->GetNumPhysicalPages();
     int frame;
     for (int clock = 0; clock < 4; clock++) {
         for (unsigned i = 0; i < numPhysPages; i++) {
@@ -48,6 +50,7 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
 
     #else
     // DEBUG('w', "Pick Victim RANDOM.\n");
+    unsigned numPhysPages = machine->GetNumPhysicalPages();
     victim = random() % numPhysPages;
     #endif
     memCoreMap->CheckFrame(victim, spaceDir, vpnDir);

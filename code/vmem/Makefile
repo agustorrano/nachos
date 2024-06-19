@@ -15,7 +15,7 @@
 
 DEFINES      = -DUSER_PROGRAM  -DFILESYS_NEEDED -DFILESYS_STUB -DVMEM \
                -DUSE_TLB -DDFS_TICKS_FIX -DUSE_DEMANDLOADING -DUSE_SWAP \
-               # -DPRPOLICY_FIFO -DPRPOLICY_CLOCK
+               -DPRPOLICY_CLOCK # -DPRPOLICY_FIFO
 INCLUDE_DIRS = -I.. -I../filesys -I../bin -I../userprog -I../threads \
                -I../machine
 HDR_FILES    = $(THREAD_HDR) $(USERPROG_HDR) $(VMEM_HDR)

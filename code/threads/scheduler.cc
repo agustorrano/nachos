@@ -38,7 +38,7 @@ Scheduler::~Scheduler()
     for (unsigned i = 0; i < NUM_QUEUES; i++) {
         delete readyList[i];
     }
-    delete readyList;
+    delete[] readyList;
 }
 
 /// Mark a thread as ready, but not running.

@@ -93,7 +93,6 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     initDataVAddr = exe.GetInitDataAddr();
     DEBUG('a', "codeSize: %d, initDataSize: %d.\n", codeSize, initDataSize);
     DEBUG('a', "codeAddr: %d, initDataAddr: %d.\n", codeVAddr, initDataVAddr);
-    DEBUG('a', "totalSize: %d.\n", size);
 
     #ifndef USE_DEMANDLOADING
 
@@ -232,7 +231,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     int flag = 0;
     if (!pageTable[vpn].valid) { // page's not in memory
-        // DEBUG('e', "Page is not in memory.\n");
+        // DEBUG('a', "Page is not in memory.\n");
         #ifdef USE_SWAP 
             flag = !swapMap->Test(vpn);
         #else
@@ -305,10 +304,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             {
                 DEBUG('a', "In stack segment. VPN: [%d], PPN: [%d].\n", vpn, physPage);
                 // hay que rellenar con 0's la pagina que pedimos antes
-                for (uint32_t i = 0; i < PAGE_SIZE; i++) {
-                    int physAddr = physPage*PAGE_SIZE + (virtAddr + i)%PAGE_SIZE;
-                    memset(&mainMemory[physAddr], 0, PAGE_SIZE);
-                }
+                memset(&mainMemory[physPage*PAGE_SIZE], 0, PAGE_SIZE);
             }
         }
         else { // page is in swap 
@@ -319,6 +315,9 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
             pageTable[vpn].physicalPage = physPage;
             #endif
         }
+        #ifdef USE_SWAP
+        memCoreMap->PrintList();
+        #endif
     }
     DEBUG('a', "Page %d is in memory, at frame %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
     return pageTable[vpn];

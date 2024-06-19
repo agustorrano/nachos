@@ -41,6 +41,13 @@ Coremap::Mark(unsigned which, AddressSpace *addrSpace, unsigned vpn)
     frames->Mark(which);
     spaces[which] = addrSpace;
     vpns[which] = vpn;
+    #ifdef PRPOLICY_FIFO
+    fifoFrames->Update(which);
+    #endif
+
+    #ifdef PRPOLICY_CLOCK
+    clockFrames->Update(which);
+    #endif
 }
 
 void
@@ -48,16 +55,12 @@ Coremap::Clear(unsigned which)
 {
     frames->Clear(which);
     spaces[which] = nullptr;
-
-    // que hago con los vpns? 
-    // los seteo en -1 o los dejo como estan?
 }
 
 bool
 Coremap::Test(unsigned which) const
 {
     return frames->Test(which);
-    //return frames->Test(which) && spaces[which] != nullptr;
 }
 
 int 
@@ -105,3 +108,19 @@ Coremap::CheckFrame(unsigned which, AddressSpace **addrSpace, unsigned *vpn)
     *addrSpace = spaces[which];
     *vpn = vpns[which];
 }
+
+#ifdef PRPOLICY_FIFO || PRPOLICY_CLOCK
+void
+Coremap::PrintList()
+{
+    printf ("List: ");
+    fifoFrames->Apply(printInt);
+    printf("\n \n");
+}
+
+void 
+Coremap::printInt(int x) {
+    printf("%d ", x);
+}
+
+#endif

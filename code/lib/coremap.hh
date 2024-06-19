@@ -44,6 +44,11 @@ public:
     List <int> *clockFrames;
     #endif
 
+    #ifdef PRPOLICY_FIFO || PRPOLICY_CLOCK
+    void PrintList();
+    static void printInt(int x);
+    #endif
+
 private:
 
     Bitmap *frames;
