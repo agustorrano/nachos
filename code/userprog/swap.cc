@@ -9,35 +9,34 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
     unsigned numPhysPages = machine->GetNumPhysicalPages();
     #ifdef PRPOLICY_FIFO
     //DEBUG('w', "Pick Victim FIFO.\n");
-    ASSERT(!memCoreMap->fifoFrames->IsEmpty())
+    ASSERT(!memCoreMap->fifoFrames->IsEmpty());
     victim = memCoreMap->fifoFrames->Pop();
     memCoreMap->fifoFrames->Append(victim);
     
     #elif PRPOLICY_CLOCK
-    // DEBUG('w', "Pick Victim CLOCK.\n");
     int frame;
     for (int clock = 0; clock < 4; clock++) {
-        int size = memCoreMap->clockFrames->GetSizeList()
-        for (int i = 0; i < size; i++) {
-            frame = memCoreMap->clockFrames->Head();
-            memCoreMap->CheckFrame(frame, spaceDir, vpnDir);
+        for (unsigned i = 0; i < numPhysPages; i++) {
             AddressSpace *space = *spaceDir;
             unsigned vpn = *vpnDir;
+            TranslationEntry* pageTable = space->GetPageTable();
+            frame = memCoreMap->clockFrames->Head();
+            memCoreMap->CheckFrame(frame, spaceDir, vpnDir);
             if (clock == 0 || clock == 2) {
-                if (space->pageTable[vpn].use == 0 && space->pageTable[vpn].dirty == 0) {
+                if (pageTable[vpn].use == 0 && pageTable[vpn].dirty == 0) {
                     victim = frame;
                     return victim;
                 }
             }
             else if (clock == 1) {
-                if (space->pageTable[vpn].use == 0 && space->pageTable[vpn].dirty == 1) {
+                if (pageTable[vpn].use == 0 && pageTable[vpn].dirty == 1) {
                     victim = frame;
                     return victim;
                 }
                 else {
-                    space->pageTable[vpn].use = 0;
-                    memCoreMap->fifoFrames->Pop();
-                    memCoreMap->fifoFrames->Append(frame);
+                    pageTable[vpn].use = 0;
+                    memCoreMap->clockFrames->Pop();
+                    memCoreMap->clockFrames->Append(frame);
                 }
             }
             else { // clock == 3

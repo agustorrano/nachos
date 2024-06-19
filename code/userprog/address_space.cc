@@ -232,7 +232,7 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
 {
     int flag = 0;
     if (!pageTable[vpn].valid) { // page's not in memory
-        DEBUG('e', "Page is not in memory.\n");
+        // DEBUG('e', "Page is not in memory.\n");
         #ifdef USE_SWAP 
             flag = !swapMap->Test(vpn);
         #else

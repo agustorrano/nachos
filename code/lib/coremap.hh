@@ -36,10 +36,6 @@ public:
 
     void CheckFrame(unsigned which, AddressSpace **addrSpace, unsigned *vpn);
 
-private:
-
-    Bitmap *frames;
-
     #ifdef PRPOLICY_FIFO
     List <int> *fifoFrames;
     #endif
@@ -47,6 +43,10 @@ private:
     #ifdef PRPOLICY_CLOCK
     List <int> *clockFrames;
     #endif
+
+private:
+
+    Bitmap *frames;
 
     // An array of addr spaces. The nth-physpage in the bitmap belongs to the nth-addressspace
     AddressSpace **spaces;   

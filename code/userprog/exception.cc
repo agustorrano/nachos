@@ -459,7 +459,7 @@ PageFaultHandler (ExceptionType _et)
 {
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
     uint32_t vpn = DivRoundDown(vAddr, PAGE_SIZE);
-    DEBUG('e', "Page [%d] Fault.\n", vpn);
+    // DEBUG('e', "Page [%d] Fault.\n", vpn);
     int i = stats->numPageFaults++ % TLB_SIZE; 
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
     if (machine->GetMMU()->tlb[i].valid) {
