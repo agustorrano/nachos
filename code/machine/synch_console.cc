@@ -35,6 +35,18 @@ SynchConsole::~SynchConsole()
 }
 
 void
+SynchConsole::ReadAvail(void *arg)
+{
+    readAvail->V();
+}
+
+void
+SynchConsole::WriteDone(void *arg)
+{
+    writeDone->V();
+}
+
+void
 SynchConsole::WriteChar(char ch)
 {
     writeLock->Acquire();
@@ -54,13 +66,22 @@ SynchConsole::ReadChar()
 }
 
 void
-SynchConsole::ReadAvail(void *arg)
+SynchConsole::WriteBuffer(char *buffer, unsigned size)
 {
-    readAvail->V();
+    writeLock->Acquire();
+    for (unsigned i = 0; i < size; i++) {
+        console->PutChar(buffer[i]);
+        writeDone->P();
+    }
+    writeLock->Release();
 }
 
-void
-SynchConsole::WriteDone(void *arg)
-{
-    writeDone->V();
+void 
+SynchConsole::ReadBuffer(char *buffer, unsigned size) {
+    readLock->Acquire();
+    for (unsigned i = 0; i < size; i++) {
+        readAvail->P();
+        buffer[i] = console->GetChar();
+    }
+    readLock->Release();
 }

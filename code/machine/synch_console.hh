@@ -19,6 +19,10 @@ public:
 
   char ReadChar();
 
+  void WriteBuffer(char *buffer, unsigned size);
+
+  void ReadBuffer(char *buffer, unsigned size);
+
 private:
 
   Console *console;

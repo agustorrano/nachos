@@ -18,11 +18,12 @@ int main(int argc, char *argv[])
 
   char buffer[1];
   // buffer[1] = '\0';
-  while(Read(buffer, 1, o) > 0) {
-    putss("reading\n");
+  while(Read(buffer, 1, o)) {
+    // putss("reading\n");
     Write(buffer, 1, 1);
-  }  
-  
+  }
+
+  Write("\n", 1, 1);
   
   Close(o);
 

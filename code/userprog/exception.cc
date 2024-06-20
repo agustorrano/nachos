@@ -190,13 +190,14 @@ SyscallHandler(ExceptionType _et)
             } 
             if (fd == CONSOLE_INPUT) { // lee de la consola
                 DEBUG('e', "`Read` requested for console.\n");
-                int count = 0;
-                while (count < size) {
-                    buffer[count] = synchConsole->ReadChar();
-                    count++;
-                }
+                synchConsole->ReadBuffer(buffer, size);
+                // int count = 0;
+                // while (count < size) {
+                //     buffer[count] = synchConsole->ReadChar();
+                //     count++;
+                // }
                 WriteBufferToUser(buffer, bufferAddr, size);
-                machine->WriteRegister(2, count);
+                machine->WriteRegister(2, size);
                 break;
             }
             else { // lee de un archivo
@@ -208,6 +209,8 @@ SyscallHandler(ExceptionType _et)
                     break; 
                 }
                 int count = openfile->Read(buffer, (unsigned) size);
+                if (count > 0)
+                    WriteBufferToUser(buffer, bufferAddr, size);
                 machine->WriteRegister(2, count);
                 break;
             }
@@ -243,12 +246,13 @@ SyscallHandler(ExceptionType _et)
             }
             if (fd == CONSOLE_OUTPUT) { // escribe en la consola
                 DEBUG('e', "`Write` requested for console.\n");
-                int count = -1;
-                do {
-                    count++;
-                    synchConsole->WriteChar(buffer[count]);
-                } while (count < size);
-                machine->WriteRegister(2, count);
+                synchConsole->WriteBuffer(buffer, size);
+                // int count = -1;
+                // do {
+                //     count++;
+                //     synchConsole->WriteChar(buffer[count]);
+                // } while (count < size);
+                machine->WriteRegister(2, size);
                 break;
             }
             else {  // escribe en un archivo
@@ -259,6 +263,7 @@ SyscallHandler(ExceptionType _et)
                     machine->WriteRegister(2, -1);
                     break; 
                 }
+                ReadBufferFromUser(bufferAddr, buffer, sizeof buffer);
                 int count = openfile->Write(buffer, (unsigned) size);
                 machine->WriteRegister(2, count);
                 break;
