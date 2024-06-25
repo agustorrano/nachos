@@ -50,8 +50,18 @@ extern Bitmap *memBitMap;
 
 #endif
 
-
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
+#include "filesys/file_system.hh"
+extern FileSystem *fileSystem;
+
+#ifndef FILESYS_STUB
+#include "filesys/synch_disk.hh"
+extern SynchDisk *synchDisk;
+#endif
+
+#endif
+
+/* #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
 #include "filesys/file_system.hh"
 #ifdef FILESYS_STUB
 extern FileSystem *fileSystem;
@@ -63,5 +73,5 @@ extern SynchFileSystem *fileSystem;
 extern SynchDisk *synchDisk;
 #endif
 #endif
-
+ */
 #endif

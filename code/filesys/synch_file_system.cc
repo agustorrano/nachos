@@ -1,4 +1,4 @@
-#include "synch_file_system.hh"
+/* #include "synch_file_system.hh"
 
 SynchFileSystem::SynchFileSystem(bool format)
 {
@@ -96,3 +96,4 @@ SynchFileSystem::CloseOpenFile(int sector)
     }
     return;
 }
+ */

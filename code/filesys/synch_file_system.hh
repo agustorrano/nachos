@@ -1,4 +1,4 @@
-#ifndef NACHOS_FILESYS_SYNCHFILESYSTEM__HH
+/* #ifndef NACHOS_FILESYS_SYNCHFILESYSTEM__HH
 #define NACHOS_FILESYS_SYNCHFILESYSTEM__HH
 
 #include "file_system.hh"
@@ -41,4 +41,4 @@ private:
     Lock *lockDirectory;
 };
 
-#endif
+#endif */

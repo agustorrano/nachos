@@ -30,11 +30,11 @@ Timer *timer;                 ///< The hardware timer device, for invoking
                               ///< context switches.
 
 #ifdef FILESYS_NEEDED
-#ifdef FILESYS_STUB
+//#ifdef FILESYS_STUB
 FileSystem *fileSystem;
 
-#else
-SynchFileSystem *fileSystem;
+#ifndef FILESYS_STUB
+//SynchFileSystem *fileSystem;
 SynchDisk *synchDisk;
 #endif
 #endif
@@ -218,20 +218,12 @@ Initialize(int argc, char **argv)
 
 #endif
 
-
-// #ifdef FILESYS
-//     synchDisk = new SynchDisk("DISK");
-// #endif
-
 #ifdef FILESYS_NEEDED
-#ifdef FILESYS_STUB
     fileSystem = new FileSystem(format);
-#else
+#ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
-    fileSystem = new SynchFileSystem(format);
 #endif
 #endif
-
 }
 
 /// Nachos is halting.  De-allocate global data structures.
