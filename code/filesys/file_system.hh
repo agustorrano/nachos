@@ -95,6 +95,17 @@ public:
 #include "directory_entry.hh"
 #include "machine/disk.hh"
 
+class OpenFileEntry {
+public:
+
+    bool toDelete;
+
+    unsigned numThreads;
+
+    int sector;
+
+    char name[FILE_NAME_MAX_LEN + 1];
+};
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
@@ -134,6 +145,8 @@ public:
 
     /// List all the files and their contents.
     void Print();
+
+    OpenFileEntry *openFileTable;
 
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a

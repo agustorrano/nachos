@@ -69,6 +69,7 @@ static const unsigned DIRECTORY_SECTOR = 1;
 FileSystem::FileSystem(bool format)
 {
     DEBUG('f', "Initializing the file system.\n");
+    openFileTable = new OpenFileEntry[NUM_DIR_ENTRIES];
     if (format) {
         Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
         Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
@@ -136,6 +137,7 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
+    delete openFileTable;
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -223,7 +225,7 @@ FileSystem::Open(const char *name)
     DEBUG('f', "Opening file %s\n", name);
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
-    if (sector >= 0) {
+    if (sector >= 0 && OpenFileAdd(openFileTable, sector, (char*)name)) {
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
     delete dir;
@@ -254,21 +256,25 @@ FileSystem::Remove(const char *name)
        delete dir;
        return false;  // file not found
     }
-    FileHeader *fileH = new FileHeader;
-    fileH->FetchFrom(sector);
+    if (IsOpen(openFileTable, sector))
+        MarkToDelete(openFileTable, sector);
+    else {
+        FileHeader *fileH = new FileHeader;
+        fileH->FetchFrom(sector);
 
-    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-    freeMap->FetchFrom(freeMapFile);
+        Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+        freeMap->FetchFrom(freeMapFile);
 
-    fileH->Deallocate(freeMap);  // Remove data blocks.
-    freeMap->Clear(sector);      // Remove header block.
-    dir->Remove(name);
+        fileH->Deallocate(freeMap);  // Remove data blocks.
+        freeMap->Clear(sector);      // Remove header block.
+        dir->Remove(name);
 
-    freeMap->WriteBack(freeMapFile);  // Flush to disk.
-    dir->WriteBack(directoryFile);    // Flush to disk.
-    delete fileH;
+        freeMap->WriteBack(freeMapFile);  // Flush to disk.
+        dir->WriteBack(directoryFile);    // Flush to disk.
+        delete fileH;
+        delete freeMap;
+    }
     delete dir;
-    delete freeMap;
     return true;
 }
 
@@ -493,4 +499,45 @@ FileSystem::Print()
     delete dirH;
     delete freeMap;
     delete dir;
+}
+
+bool
+OpenFileAdd(OpenFileEntry *openFileTable, int sector, char *name) 
+{
+    int x = -1;
+    for (int i = 0; i < NUM_DIR_ENTRIES; i++) {
+        if (openFileTable[i].sector == sector) {
+            if (!openFileTable[i].toDelete) {
+                openFileTable[i].numThreads++;
+                return true;
+            }
+            return false;
+        }
+        if (openFileTable[i].sector == -1)
+            x = i;
+    }
+
+    ASSERT(x >= 0);
+    strcpy(openFileTable[x].name, name); 
+    openFileTable[x].sector = sector;
+    openFileTable[x].numThreads = 1;
+    openFileTable[x].toDelete = 0;
+    return true;
+}
+
+bool
+IsOpen(OpenFileEntry *openFileTable, int sector) 
+{
+    for (int i = 0; i < NUM_DIR_ENTRIES; i++)
+        if (openFileTable[i].sector == sector)
+            return true;
+    return false;
+}
+
+void
+MarkToDelete(OpenFileEntry *openFileTable, int sector)
+{
+    for (int i = 0; i < NUM_DIR_ENTRIES; i++)
+        if (openFileTable[i].sector == sector)
+            openFileTable[i].toDelete = 1;
 }

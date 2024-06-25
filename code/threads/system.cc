@@ -30,11 +30,13 @@ Timer *timer;                 ///< The hardware timer device, for invoking
                               ///< context switches.
 
 #ifdef FILESYS_NEEDED
+#ifdef FILESYS_STUB
 FileSystem *fileSystem;
-#endif
 
-#ifdef FILESYS
+#else
+SynchFileSystem *fileSystem;
 SynchDisk *synchDisk;
+#endif
 #endif
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
@@ -206,7 +208,7 @@ Initialize(int argc, char **argv)
     synchConsole = new SynchConsole(nullptr, nullptr);
 
     threadsTable = new Table<Thread*>;
-    threadsTable->Add(currentThread);
+    //threadsTable->Add(currentThread);
 
 #ifdef USE_SWAP
     memCoreMap = new Coremap(numPhysicalPages);
@@ -217,12 +219,17 @@ Initialize(int argc, char **argv)
 #endif
 
 
-#ifdef FILESYS
-    synchDisk = new SynchDisk("DISK");
-#endif
+// #ifdef FILESYS
+//     synchDisk = new SynchDisk("DISK");
+// #endif
 
 #ifdef FILESYS_NEEDED
+#ifdef FILESYS_STUB
     fileSystem = new FileSystem(format);
+#else
+    synchDisk = new SynchDisk("DISK");
+    fileSystem = new SynchFileSystem(format);
+#endif
 #endif
 
 }
