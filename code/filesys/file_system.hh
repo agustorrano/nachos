@@ -94,6 +94,7 @@ public:
 
 #include "directory_entry.hh"
 #include "machine/disk.hh"
+#include "threads/lock.hh"
 
 class OpenFileEntry {
 public:
@@ -146,13 +147,22 @@ public:
     /// List all the files and their contents.
     void Print();
 
-    OpenFileEntry *openFileTable;
+    bool OpenFileAdd(int sector, char *name);
+
+    bool IsOpen(int sector);
+
+    void MarkToDelete(int sector);
+
+    void CloseOpenFile(int sector);
 
 private:
+    OpenFileEntry *openFileTable;
+
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+    Lock *lockFS;
 };
 
 #endif

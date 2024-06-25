@@ -70,6 +70,8 @@ FileSystem::FileSystem(bool format)
 {
     DEBUG('f', "Initializing the file system.\n");
     openFileTable = new OpenFileEntry[NUM_DIR_ENTRIES];
+    lockFS = new Lock("fileSystem Lock");
+
     if (format) {
         Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
         Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
@@ -138,6 +140,7 @@ FileSystem::~FileSystem()
     delete freeMapFile;
     delete directoryFile;
     delete openFileTable;
+    delete lockFS;
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -170,6 +173,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
 {
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
+    lockFS->Acquire();
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
@@ -204,6 +208,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
         delete freeMap;
     }
     delete dir;
+    lockFS->Release();
     return success;
 }
 
@@ -218,17 +223,18 @@ OpenFile *
 FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
-
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
     DEBUG('f', "Opening file %s\n", name);
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
-    if (sector >= 0 && OpenFileAdd(openFileTable, sector, (char*)name)) {
+    if (sector >= 0 && this->OpenFileAdd(sector, (char*)name)) {
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
     delete dir;
+    lockFS->Release();
     return openFile;  // Return null if not found.
 }
 
@@ -248,16 +254,17 @@ bool
 FileSystem::Remove(const char *name)
 {
     ASSERT(name != nullptr);
-
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     if (sector == -1) {
        delete dir;
+       lockFS->Release();
        return false;  // file not found
     }
-    if (IsOpen(openFileTable, sector))
-        MarkToDelete(openFileTable, sector);
+    if (this->IsOpen(sector))
+        this->MarkToDelete(sector);
     else {
         FileHeader *fileH = new FileHeader;
         fileH->FetchFrom(sector);
@@ -275,6 +282,7 @@ FileSystem::Remove(const char *name)
         delete freeMap;
     }
     delete dir;
+    lockFS->Release();
     return true;
 }
 
@@ -282,11 +290,13 @@ FileSystem::Remove(const char *name)
 void
 FileSystem::List()
 {
+    lockFS->Acquire();
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
 
     dir->FetchFrom(directoryFile);
     dir->List();
     delete dir;
+    lockFS->Release();
 }
 
 static bool
@@ -413,6 +423,7 @@ CheckDirectory(const RawDirectory *rd, Bitmap *shadowMap)
 bool
 FileSystem::Check()
 {
+    lockFS->Acquire();
     DEBUG('f', "Performing filesystem check\n");
     bool error = false;
 
@@ -460,7 +471,7 @@ FileSystem::Check()
 
     DEBUG('f', error ? "Filesystem check failed.\n"
                      : "Filesystem check succeeded.\n");
-
+    lockFS->Release();
     return !error;
 }
 
@@ -473,6 +484,7 @@ FileSystem::Check()
 void
 FileSystem::Print()
 {
+    lockFS->Acquire();
     FileHeader *bitH    = new FileHeader;
     FileHeader *dirH    = new FileHeader;
     Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
@@ -499,10 +511,12 @@ FileSystem::Print()
     delete dirH;
     delete freeMap;
     delete dir;
+
+    lockFS->Release();
 }
 
 bool
-OpenFileAdd(OpenFileEntry *openFileTable, int sector, char *name) 
+FileSystem::OpenFileAdd(int sector, char *name) 
 {
     int x = -1;
     for (int i = 0; i < NUM_DIR_ENTRIES; i++) {
@@ -526,7 +540,7 @@ OpenFileAdd(OpenFileEntry *openFileTable, int sector, char *name)
 }
 
 bool
-IsOpen(OpenFileEntry *openFileTable, int sector) 
+FileSystem::IsOpen(int sector) 
 {
     for (int i = 0; i < NUM_DIR_ENTRIES; i++)
         if (openFileTable[i].sector == sector)
@@ -535,9 +549,26 @@ IsOpen(OpenFileEntry *openFileTable, int sector)
 }
 
 void
-MarkToDelete(OpenFileEntry *openFileTable, int sector)
+FileSystem::MarkToDelete(int sector)
 {
     for (int i = 0; i < NUM_DIR_ENTRIES; i++)
         if (openFileTable[i].sector == sector)
             openFileTable[i].toDelete = 1;
+}
+
+void 
+FileSystem::CloseOpenFile(int sector)
+{
+    int x = -1;
+    for (int i = 0; i < NUM_DIR_ENTRIES; i++) {
+        if (openFileTable[i].sector == sector) {
+            openFileTable[i].numThreads--;
+            if (openFileTable[i].numThreads == 0 && openFileTable[i].toDelete) {
+                openFileTable[i].sector = -1;
+                openFileTable[i].toDelete = 0;
+                Remove(openFileTable[i].name); // los locks son recursivos? si no esto se rompe
+            }
+        }
+    }
+    return;
 }
