@@ -94,19 +94,7 @@ public:
 
 #include "directory_entry.hh"
 #include "machine/disk.hh"
-#include "threads/lock.hh"
-
-class OpenFileEntry {
-public:
-
-    bool toDelete;
-
-    unsigned numThreads;
-
-    int sector;
-
-    char name[FILE_NAME_MAX_LEN + 1];
-};
+#include "open_file_list.hh"
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
@@ -147,22 +135,15 @@ public:
     /// List all the files and their contents.
     void Print();
 
-    bool OpenFileAdd(int sector, char *name);
-
-    bool IsOpen(int sector);
-
-    void MarkToDelete(int sector);
-
     void CloseOpenFile(int sector);
 
 private:
-    OpenFileEntry *openFileTable;
+    OpenFileList *openfiles;
 
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
-    Lock *lockFS;
 };
 
 #endif
