@@ -49,6 +49,8 @@
 ../filesys/open_file.cc
 ../filesys/synch_disk.cc
 ../machine/disk.cc
+../filesys/synch_file_system.cc
+../filesys/open_file_list.cc
 ../threads/condition.hh
 ../threads/copyright.h
 ../threads/lock.hh
@@ -101,3 +103,5 @@
 ../filesys/raw_file_header.hh
 ../filesys/synch_disk.hh
 ../machine/disk.hh
+../filesys/synch_file_system.hh
+../filesys/open_file_list.hh

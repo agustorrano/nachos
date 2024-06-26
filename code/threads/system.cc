@@ -219,10 +219,11 @@ Initialize(int argc, char **argv)
 #endif
 
 #ifdef FILESYS_NEEDED
-    fileSystem = new FileSystem(format);
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
 #endif
+    fileSystem = new FileSystem(format);
+
 #endif
 }
 
