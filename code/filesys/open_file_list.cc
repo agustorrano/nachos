@@ -24,7 +24,13 @@ OpenFileList::OpenFileList()
 
 OpenFileList::~OpenFileList()
 {
-    // delete all elements
+    ListNode *element;
+
+    while (first != nullptr) {
+        element = first->next;
+        delete first;
+        first = element;
+    }
 }
 
 
