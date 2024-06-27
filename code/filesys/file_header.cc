@@ -46,14 +46,24 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     }
 
     raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
+    // raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
+    unsigned numDataSectors = DivRoundUp(fileSize, SECTOR_SIZE);
+    unsigned numInTables = DivRoundUp(DivRoundUp(fileSize, SECTOR_SIZE), NUM_DIRECT);
+    raw.numSectors = numDataSectors + numInTables;
     if (freeMap->CountClear() < raw.numSectors) {
         return false;  // Not enough space.
-    }
+    }   
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
+    for (unsigned i = 0; i < numInTables; i++) {
         raw.dataSectors[i] = freeMap->Find();
     }
+
+    for (unsigned i = 0; i < numDataSectors; i++) {
+        unsigned j = DivRoundDown(i, NUM_DIRECT);
+        unsigned idx = i % NUM_DIRECT;
+        raw.indirectTable[j][idx] = freeMap->Find();
+    }
+
     return true;
 }
 
@@ -65,10 +75,25 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
+    unsigned numDataSectors = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+    unsigned numInTables = DivRoundUp(DivRoundUp(raw.numBytes, SECTOR_SIZE), NUM_DIRECT);
+
+    for (unsigned i = 0; i < numDataSectors; i++) {
+        unsigned j = DivRoundDown(i, NUM_DIRECT);
+        unsigned idx = i % NUM_DIRECT;
+        ASSERT(freeMap->Test(raw.indirectTable[j][idx]));
+        freeMap->Clear(raw.indirectTable[j][idx]);
+    }
+
+    for (unsigned i = 0; i < numInTables; i++) {
+        ASSERT(freeMap->Test(raw.dataSectors[i]));
         freeMap->Clear(raw.dataSectors[i]);
     }
+
+    // for (unsigned i = 0; i < raw.numSectors; i++) {
+    //     ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
+    //     freeMap->Clear(raw.dataSectors[i]);
+    // }
 }
 
 /// Fetch contents of file header from disk.
