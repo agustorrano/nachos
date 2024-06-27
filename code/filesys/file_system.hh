@@ -96,6 +96,9 @@ public:
 #include "machine/disk.hh"
 #include "open_file_list.hh"
 
+
+class Lock;
+
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
 /// files that can be loaded onto the disk.
@@ -144,6 +147,9 @@ private:
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+    Lock *lockBitmap;
+
+    Lock *lockDirectory;
 };
 
 #endif
