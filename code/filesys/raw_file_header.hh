@@ -9,22 +9,24 @@
 
 #include "machine/disk.hh"
 
-
-// static const unsigned NUM_DIRECT
-//   = (SECTOR_SIZE - 2 * sizeof (int)) / sizeof (int);
-static const unsigned NUM_INDIRECT
-   = (SECTOR_SIZE - sizeof (int)) / sizeof (int);
 static const unsigned NUM_DIRECT
-   = SECTOR_SIZE / sizeof (int);
-const unsigned MAX_FILE_SIZE = NUM_INDIRECT * NUM_DIRECT * SECTOR_SIZE;
+   = (SECTOR_SIZE - 4 * sizeof (int) )/ sizeof (int); // 28 
+static const unsigned NUM_INDIRECT
+   = SECTOR_SIZE / sizeof (int); // 32
+const unsigned MAX_FILE_SIZE = (NUM_INDIRECT * NUM_INDIRECT + NUM_INDIRECT + NUM_DIRECT) * SECTOR_SIZE;
 
 struct RawFileHeader {
     unsigned numBytes;  ///< Number of bytes in the file.
     unsigned numSectors;  ///< Number of data sectors in the file.
     unsigned dataSectors[NUM_DIRECT];  ///< Disk sector numbers for each data
                                        ///< block in the file.
-    unsigned indirectTable[NUM_INDIRECT][NUM_DIRECT];
+    unsigned simpleIndirectT;
+    unsigned doubleIndirectT;
 };  
 
+struct IndirectT
+{
+  unsigned dataSectors[NUM_INDIRECT];
+};
 
 #endif
