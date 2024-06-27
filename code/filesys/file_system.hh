@@ -141,7 +141,7 @@ public:
     void CloseOpenFile(int sector);
 
 private:
-    OpenFileTable *openfiles;
+    OpenFileTable openfiles;
 
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.

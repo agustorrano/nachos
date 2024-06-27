@@ -239,7 +239,7 @@ FileSystem::Open(const char *name)
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     lockDirectory->Release();
-    if (sector >= 0 && openfiles->OpenFileAdd(sector, (char*)name)) {
+    if (sector >= 0 && openfiles.OpenFileAdd(sector, (char*)name)) {
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
     delete dir;
@@ -271,8 +271,8 @@ FileSystem::Remove(const char *name)
         delete dir;
         return false;  // file not found
     }
-    if (openfiles->IsOpen(sector))
-        openfiles->MarkToDelete(sector);
+    if (openfiles.IsOpen(sector))
+        openfiles.MarkToDelete(sector);
     else {
         FileHeader *fileH = new FileHeader;
         fileH->FetchFrom(sector);
@@ -523,5 +523,5 @@ FileSystem::Print()
 void
 FileSystem::CloseOpenFile(int sector) 
 {
-    openfiles->CloseOpenFile(sector);
+    openfiles.CloseOpenFile(sector);
 }
