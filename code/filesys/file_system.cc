@@ -71,7 +71,6 @@ static const unsigned DIRECTORY_SECTOR = 1;
 FileSystem::FileSystem(bool format)
 {
     DEBUG('f', "Initializing the file system.\n");
-    openfiles = new OpenFileList();
     lockBitmap = new Lock("lockBitmap");
     lockDirectory = new Lock("lockDirectory");
 
@@ -146,7 +145,6 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
-    delete openfiles;
     delete lockBitmap;
     delete lockDirectory;
 }
@@ -214,8 +212,8 @@ FileSystem::Create(const char *name, unsigned initialSize)
             }
             delete h;
         }
-        delete freeMap;
         lockBitmap->Release();
+        delete freeMap;
     }
     lockDirectory->Release();
     delete dir;

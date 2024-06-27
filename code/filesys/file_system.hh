@@ -94,7 +94,7 @@ public:
 
 #include "directory_entry.hh"
 #include "machine/disk.hh"
-#include "open_file_list.hh"
+#include "open_file_table.hh"
 
 
 class Lock;
@@ -141,7 +141,7 @@ public:
     void CloseOpenFile(int sector);
 
 private:
-    OpenFileList *openfiles;
+    OpenFileTable *openfiles;
 
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.

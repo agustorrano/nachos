@@ -139,7 +139,7 @@ FILESYS_HDR = filesys/directory.hh         \
               filesys/synch_disk.hh        \
               machine/disk.hh              \
               filesys/synch_file_system.hh \
-              filesys/open_file_list.hh
+              filesys/open_file_table.hh
 
 FILESYS_SRC = filesys/directory.cc         \
               filesys/file_header.cc       \
@@ -149,7 +149,7 @@ FILESYS_SRC = filesys/directory.cc         \
               filesys/synch_disk.cc        \
               machine/disk.cc              \
               filesys/synch_file_system.cc \
-              filesys/open_file_list.cc
+              filesys/open_file_table.cc
 
 
 # Assemble the expected paths by prepending `BASE_DIR`.  You do not need to
