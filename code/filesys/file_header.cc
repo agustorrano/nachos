@@ -50,8 +50,11 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
 
     raw.numBytes = fileSize;
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    unsigned numDirSect = min(raw.numSectors, NUM_DIRECT);
-    unsigned numIndSect = raw.numSectors - numDirSect;
+    numDirSect = min(raw.numSectors, NUM_DIRECT);
+    numIndSect = raw.numSectors - numDirSect;
+    numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+    numDoubleIndSect = numIndSect - numSimpleIndSect;
+    numInTables = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
     
     // alocamos los sectores directos
     for (unsigned i = 0; i < numDirSect; i++) {
@@ -60,17 +63,14 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
 
     if (numIndSect > 0) {
         // alocamos los sectores indirectos de primer nivel
-        unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
         raw.simpleIndirectT = freeMap->Find();
         for (unsigned j = 0; j < numSimpleIndSect; j++)
             simpleT.dataSectors[j] = freeMap->Find(); 
         
         if (numIndSect - numSimpleIndSect > 0) {
             // alocamos los sectores indirectos de segundo nivel
-            unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
             raw.doubleIndirectT = freeMap->Find();
 
-            unsigned numInTables = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
             for (unsigned i = 0; i < numInTables - 1; i++) {
                 doubleT.dataSectors[i] = freeMap->Find();
                 for (unsigned j = 0; j < NUM_INDIRECT; j++)
@@ -93,42 +93,44 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
-    unsigned numInTables = 0, numDirectSectors, numIndirectSectors;
-    if (raw.numSectors > NUM_DIRECT) { 
-        numInTables = DivRoundUp(raw.numSectors - NUM_DIRECT, NUM_DIRECT);
-        numDirectSectors = NUM_DIRECT;
-        numIndirectSectors = raw.numSectors - numDirectSectors;
-    }
-    else {
-        numDirectSectors = raw.numSectors;
-        numIndirectSectors = 0;
-    }
+    if (numDoubleIndSect > 0) {
 
-    // desalocamos por completo
-    for (unsigned i = 0; i < numInTables - 1; i++) {
-        for (unsigned j = 0; j < NUM_DIRECT; j++) {
-            ASSERT(freeMap->Test(raw.indirectTable[i][j]));
-            freeMap->Clear(raw.indirectTable[i][j]);
+        // desalocamos por completo
+        for (unsigned i = 0; i < numInTables - 1; i++) {
+            for (unsigned j = 0; j < NUM_INDIRECT; j++) {
+                ASSERT(freeMap->Test(simpleDoublesT[i].dataSectors[j]));
+                freeMap->Clear(simpleDoublesT[i].dataSectors[j]);
+            }
+            ASSERT(freeMap->Test(doubleT.dataSectors[i]));
+            freeMap->Clear(doubleT.dataSectors[i]);
         }
+
+        // desalocamos lo necesario de la ultima tabla
+        unsigned j = numDoubleIndSect % NUM_INDIRECT;
+        for (unsigned i = 0; i < j; i++) {
+            ASSERT(freeMap->Test(simpleDoublesT[numInTables - 1].dataSectors[i]));
+            freeMap->Clear(simpleDoublesT[numInTables - 1].dataSectors[i]);
+        }
+        ASSERT(freeMap->Test(doubleT.dataSectors[numInTables - 1]));
+        freeMap->Clear(doubleT.dataSectors[numInTables - 1]);
+
     }
 
-    // desalocamos lo necesario de la ultima tabla
-    unsigned j = numIndirectSectors % NUM_DIRECT;
-    for (unsigned i = 0; i < j;i++) {
-        ASSERT(freeMap->Test(raw.indirectTable[numInTables - 1][i]));
-        freeMap->Clear(raw.indirectTable[numInTables - 1][i]);
+    if (numSimpleIndSect > 0) {
+        for (unsigned j = 0; j < numSimpleIndSect; j++) {
+            ASSERT(freeMap->Test(simpleT.dataSectors[j]));
+            freeMap->Clear(simpleT.dataSectors[j]);
+        }
+        
+        ASSERT(freeMap->Test(raw.simpleIndirectT));
+        freeMap->Clear(raw.simpleIndirectT);
     }
 
     // desalocamos los sectores directos
-    for (unsigned i = 0; i < numDirectSectors; i++) {
+    for (unsigned i = 0; i < numDirSect; i++) {
         ASSERT(freeMap->Test(raw.dataSectors[i]));
         freeMap->Clear(raw.dataSectors[i]);
     }
-
-    // for (unsigned i = 0; i < raw.numSectors; i++) {
-    //     ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
-    //     freeMap->Clear(raw.dataSectors[i]);
-    // }
 }
 
 /// Fetch contents of file header from disk.
