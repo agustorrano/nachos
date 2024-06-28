@@ -152,12 +152,26 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength) {
-        return 0;  // Check request.
+    // if (position >= fileLength) {
+    //     return 0;  // Check request.
+    // }
+    // if (position + numBytes > fileLength) {
+    //     numBytes = fileLength - position;
+    // }
+
+    if (position >= fileLength || position + numBytes > fileLength) {
+        unsigned extendSize = position + numBytes - fileLength;
+        Bitmap *freeMap = fileSystem->AquireFreeMap();
+        // no se pudo extender el archivo
+        if(!hdr->Extend(freeMap, extendSize)) {
+            fileSystem->ReleaseFreeMap(freeMap);
+            return 0;
+        }
+        fileLength = hdr->FileLength();
+        hdr->WriteBack(sector);
+        fileSystem->ReleaseFreeMap(freeMap);
     }
-    if (position + numBytes > fileLength) {
-        numBytes = fileLength - position;
-    }
+
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 

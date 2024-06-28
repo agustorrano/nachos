@@ -95,6 +95,7 @@ public:
 #include "directory_entry.hh"
 #include "machine/disk.hh"
 #include "open_file_table.hh"
+#include "lib/bitmap.hh"
 
 
 class Lock;
@@ -139,6 +140,10 @@ public:
     void Print();
 
     void CloseOpenFile(int sector);
+
+    Bitmap *AquireFreeMap();
+
+    void ReleaseFreeMap(Bitmap *freeMap);
 
 private:
     OpenFileTable *openfiles;

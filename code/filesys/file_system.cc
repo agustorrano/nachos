@@ -526,3 +526,20 @@ FileSystem::CloseOpenFile(int sector)
 {
     openfiles->CloseOpenFile(sector);
 }
+
+Bitmap *
+FileSystem::AquireFreeMap()
+{
+    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+    lockBitmap->Acquire();
+    freeMap->FetchFrom(freeMapFile);
+    return freeMap;
+}
+
+void 
+FileSystem::ReleaseFreeMap(Bitmap *freeMap)
+{
+    freeMap->WriteBack(freeMapFile);
+    lockBitmap->Release();
+    delete freeMap;
+}

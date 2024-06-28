@@ -330,3 +330,91 @@ FileHeader::GetRaw() const
 {
     return &raw;
 }
+
+bool 
+FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
+{
+    ASSERT(freeMap != nullptr);
+
+    unsigned oldNumBytes         = raw.numBytes;
+    unsigned oldNumSectors       = raw.numSectors;
+    unsigned oldNumDirSect       = min(raw.numSectors, NUM_DIRECT);
+    unsigned oldNumIndSect       = raw.numSectors - oldNumDirSect;
+    unsigned oldNumSimpleIndSect = min(oldNumIndSect, NUM_INDIRECT);
+    unsigned oldNumDoubleIndSect = oldNumIndSect - oldNumSimpleIndSect;
+    unsigned oldNumInTables      = DivRoundUp(oldNumDoubleIndSect, NUM_INDIRECT);
+
+    raw.numBytes += extendSize;
+    raw.numSectors = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+
+    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
+    unsigned numIndSect       = raw.numSectors - numDirSect;
+    unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+    unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
+    unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+
+    // ya tengo la cantidad de sectores necesarios
+    if (oldNumSectors == raw.numSectors) {
+        return true;
+    }
+
+    // debemos asegurarnos que el tamaño del archivo no sea tan
+    // grande
+    if (freeMap->CountClear() < raw.numSectors - oldNumSectors || raw.numBytes > MAX_FILE_SIZE) {
+        raw.numBytes = oldNumBytes;
+        raw.numSectors = oldNumSectors;
+        return false;
+    }
+
+    // alocamos lo que falte de los sectores directos
+    for (unsigned i = oldNumSectors; i < numDirSect; i++) {
+        raw.dataSectors[i] = freeMap->Find();
+    }
+
+    // alocamos la tabla de primer nivel
+    if (oldNumSimpleIndSect < numSimpleIndSect) {
+        if (oldNumSimpleIndSect == 0)
+            raw.simpleIndirectT = freeMap->Find();
+        
+        for (unsigned i = oldNumSimpleIndSect; i < numSimpleIndSect; i++)
+            simpleT.dataSectors[i] = freeMap->Find(); 
+    }
+
+    // alocamos la tabla de segundo nivel
+    if (oldNumDoubleIndSect < numDoubleIndSect) {
+        unsigned k = oldNumDoubleIndSect % NUM_INDIRECT;
+
+        if (oldNumDoubleIndSect == 0)
+            raw.doubleIndirectT = freeMap->Find();
+
+        // si la cantidad de tablas es la misma, como el número de sectores
+        // es mayor, sólo habría que alocar más sectores de la última tabla        
+        if (oldNumInTables == numInTables) {
+            ASSERT(k != 0);
+            for (unsigned i = k; i < numDoubleIndSect - oldNumDoubleIndSect; i++)
+                simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find();
+        }
+        
+        if (oldNumInTables < numInTables) {
+            if (k != 0) {
+                // alocamos los sectores restantes de la última tabla
+                for (unsigned i = k; i < NUM_INDIRECT; i++)
+                    simpleDoublesT[oldNumInTables - 1].dataSectors[i] = freeMap->Find();
+            }
+
+            for (unsigned i = oldNumInTables; i < numInTables - 1; i++) {
+                doubleT.dataSectors[i] = freeMap->Find();
+                for (unsigned j = 0; j < NUM_INDIRECT; j++)
+                    simpleDoublesT[i].dataSectors[j] = freeMap->Find();
+            }
+
+            doubleT.dataSectors[numInTables - 1] = freeMap->Find();
+            unsigned j = numDoubleIndSect % NUM_INDIRECT;
+            for (unsigned i = 0; i < j; i++)
+                simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find(); 
+        }
+
+    }
+
+    return true;
+}

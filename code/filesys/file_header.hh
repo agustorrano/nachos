@@ -63,6 +63,8 @@ public:
     /// system at a low level.
     const RawFileHeader *GetRaw() const;
 
+    bool Extend(Bitmap *freeMap, unsigned extendSize);
+
 private:
     RawFileHeader raw;
     IndirectT simpleT;
