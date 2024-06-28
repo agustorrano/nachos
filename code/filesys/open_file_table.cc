@@ -153,6 +153,7 @@ OpenFileTable::ReHash() {
 bool
 OpenFileTable::OpenFileAdd(int sector, char *name) {
 	int hash = getHash(sector);
+    numElems++;
 	return table[hash].OpenFileAdd(sector, name); // lo agrego a la casilla de la tabla que corresponde
 }
 
@@ -172,5 +173,6 @@ OpenFileTable::MarkToDelete(int sector) {
 void
 OpenFileTable::CloseOpenFile(int sector) {
 	int hash = getHash(sector);
+    numElems--;
 	return table[hash].CloseOpenFile(sector); 
 }
