@@ -138,7 +138,6 @@ FILESYS_HDR = filesys/directory.hh         \
               filesys/raw_file_header.hh   \
               filesys/synch_disk.hh        \
               machine/disk.hh              \
-              filesys/synch_file_system.hh \
               filesys/open_file_table.hh
 
 FILESYS_SRC = filesys/directory.cc         \
@@ -148,7 +147,6 @@ FILESYS_SRC = filesys/directory.cc         \
               filesys/open_file.cc         \
               filesys/synch_disk.cc        \
               machine/disk.cc              \
-              filesys/synch_file_system.cc \
               filesys/open_file_table.cc
 
 

@@ -59,7 +59,7 @@ private:
 
   	// Funcion Hash
   	int getHash(int key){
-  	  return key % numElems;
+  	  return key % capacity;
   	}
 
 public: 
