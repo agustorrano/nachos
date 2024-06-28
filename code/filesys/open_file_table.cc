@@ -72,7 +72,7 @@ OpenFileList::IsOpen(int sector)
     ListNode *ptr;
     for (ptr = first; ptr != nullptr; ptr = ptr->next)
         if (ptr->sector == sector)
-            return true; // no tendriamos que fijarnos que no esté para eliminar?
+            return true;
     return false;
 }
 
@@ -85,11 +85,11 @@ OpenFileList::MarkToDelete(int sector)
             ptr->toDelete = 1;
 }
 
-void 
+bool 
 OpenFileList::CloseOpenFile(int sector)
 {
     ListNode *ptr = first, *prev_ptr = nullptr;
-    for (;ptr != nullptr; prev_ptr = ptr, ptr = ptr->next)
+    for (;ptr != nullptr; prev_ptr = ptr, ptr = ptr->next) {
         if (ptr->sector == sector) {
             ptr->numThreads--;
             if (ptr->numThreads == 0 && ptr->toDelete) {
@@ -103,17 +103,18 @@ OpenFileList::CloseOpenFile(int sector)
                 if (last == ptr) {
                     last = prev_ptr;
                 }
-                //delete ptr;
+                delete ptr;
                 size--;
-                //Remove(ptr->name); HAY QUE HACERLO
+                return true; // retorna true si hay que llamar a release
             }
-            return;
+            return false;
         }
+    }   
+    return false;
 }
 
 OpenFileTable::OpenFileTable(int cap){
   	table = new OpenFileList[cap];
-  	numElems = 0;
   	capacity = cap;
   	for (int i = 0; i < cap; i++)
   	  table[i] = OpenFileList();
@@ -123,37 +124,9 @@ OpenFileTable::~OpenFileTable(){
 	delete[] table;
 }
 
-void
-OpenFileTable::ReHash() {
-	int oldCapacity = capacity;
-    capacity *= 2;
-    OpenFileList* newTable = new OpenFileList[capacity];
-
-    for (int i = 0; i < oldCapacity; ++i) {
-        ListNode* current = table[i].first;
-        while (current != nullptr) {
-            int newHash = getHash(current->sector);
-
-            if (newTable[newHash].first == nullptr) {
-                newTable[newHash].first = current;
-                newTable[newHash].last = current;
-                current->next = nullptr;
-            } else {
-                newTable[newHash].last->next = current;
-                newTable[newHash].last = current;
-                current->next = nullptr;
-            }
-
-            ListNode* next = current->next;
-            current = next;
-        }
-	}	
-}
-
 bool
 OpenFileTable::OpenFileAdd(int sector, char *name) {
 	int hash = getHash(sector);
-    numElems++;
 	return table[hash].OpenFileAdd(sector, name); // lo agrego a la casilla de la tabla que corresponde
 }
 
@@ -170,9 +143,8 @@ OpenFileTable::MarkToDelete(int sector) {
 }
 
 
-void
+bool
 OpenFileTable::CloseOpenFile(int sector) {
 	int hash = getHash(sector);
-    numElems--;
 	return table[hash].CloseOpenFile(sector); 
 }

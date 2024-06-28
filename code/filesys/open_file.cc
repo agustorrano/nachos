@@ -32,7 +32,8 @@ OpenFile::OpenFile(int s)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
-    fileSystem->CloseOpenFile(sector);
+    if (fileSystem->CloseOpenFile(sector))
+        fileSystem->Release(sector);
     delete hdr;
 }
 

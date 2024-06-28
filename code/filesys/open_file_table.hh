@@ -39,7 +39,7 @@ public:
 
     void MarkToDelete(int sector);
 
-    void CloseOpenFile(int sector);
+    bool CloseOpenFile(int sector);
 
     typedef OpenFileEntry ListNode;
 
@@ -54,7 +54,6 @@ public:
 class OpenFileTable{ // tabla hash
 private:
   	OpenFileList *table; // tabla donde cada casillero es una lista
-  	int numElems;
 	int capacity;
 
   	// Funcion Hash
@@ -67,15 +66,13 @@ public:
 
     ~OpenFileTable();
 	
-	void ReHash();
-
     bool OpenFileAdd(int sector, char *name);
 
     bool IsOpen(int sector);
 
     void MarkToDelete(int sector);
 
-    void CloseOpenFile(int sector);
+    bool CloseOpenFile(int sector);
 };
 
 #endif

@@ -146,18 +146,22 @@ void
 FileHeader::FetchFrom(unsigned sector)
 {
     synchDisk->ReadSector(sector, (char *) &raw);
-    synchDisk->ReadSector(raw.simpleIndirectT, (char*) &simpleT);
-    synchDisk->ReadSector(raw.doubleIndirectT, (char*) &doubleT);
-    
-    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-    unsigned numIndSect       = raw.numSectors - numDirSect;
-    unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
-    unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
-    unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+    if (raw.numSectors >= NUM_DIRECT) {
+        synchDisk->ReadSector(raw.simpleIndirectT, (char*) &simpleT);
+        if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
+            synchDisk->ReadSector(raw.doubleIndirectT, (char*) &doubleT);
 
-    for (unsigned i = 0; i < numInTables; i++) {
-        unsigned sec = doubleT.dataSectors[i];
-        synchDisk->ReadSector(sec, (char*) &simpleDoublesT[i]);
+            unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
+            unsigned numIndSect       = raw.numSectors - numDirSect;
+            unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+            unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
+            unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+
+            for (unsigned i = 0; i < numInTables; i++) {
+                unsigned sec = doubleT.dataSectors[i];
+                synchDisk->ReadSector(sec, (char*) &simpleDoublesT[i]);
+            }
+        }
     }
 }
 
@@ -168,20 +172,24 @@ void
 FileHeader::WriteBack(unsigned sector)
 {
     synchDisk->WriteSector(sector, (char *) &raw);
-    synchDisk->WriteSector(raw.simpleIndirectT, (char*) &simpleT);
-    synchDisk->WriteSector(raw.doubleIndirectT, (char*) &doubleT);
-    
-    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-    unsigned numIndSect       = raw.numSectors - numDirSect;
-    unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
-    unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
-    unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+    if (raw.numSectors >= NUM_DIRECT) {
+        synchDisk->WriteSector(raw.simpleIndirectT, (char*) &simpleT);
+        if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
+            synchDisk->WriteSector(raw.doubleIndirectT, (char*) &doubleT);
 
-    for (unsigned i = 0; i < numInTables; i++) {
-        unsigned sec = doubleT.dataSectors[i];
-        synchDisk->WriteSector(sec, (char*) &simpleDoublesT[i]);
+            unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
+            unsigned numIndSect       = raw.numSectors - numDirSect;
+            unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+            unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
+            unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+
+            for (unsigned i = 0; i < numInTables; i++) {
+                unsigned sec = doubleT.dataSectors[i];
+                synchDisk->WriteSector(sec, (char*) &simpleDoublesT[i]);
+            }
+        }
     }
-}
+}   
 
 /// Return which disk sector is storing a particular byte within the file.
 /// This is essentially a translation from a virtual address (the offset in
@@ -246,22 +254,21 @@ FileHeader::Print(const char *title)
         for (unsigned i = 0; i < numSimpleIndSect; i++)
             printf("%u ", simpleT.dataSectors[i]);
         printf("\n");
-
-        if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
-            printf("    second level indirect block indexes: ");
-
-            for (unsigned i = 0; i < numInTables - 1; i++) {
-                printf("\n     table[%u]: ", i);
-                for (unsigned j = 0; j < NUM_INDIRECT; j++)
-                    printf("%u ", simpleDoublesT[i].dataSectors[j]);
-            }
-            unsigned j = numDoubleIndSect % NUM_INDIRECT;
-            printf("\n     table[%u]: ", numInTables - 1);
-            for (unsigned i = 0; i < j; i++)
-                printf("%u ", simpleDoublesT[numInTables - 1].dataSectors[i]);
-
-            printf("\n");
+    }
+    if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
+        printf("    second level indirect block indexes: ");
+        for (unsigned i = 0; i < numInTables - 1; i++) {
+            printf("\n     table[%u]: ", i);
+            for (unsigned j = 0; j < NUM_INDIRECT; j++)
+                printf("%u ", simpleDoublesT[i].dataSectors[j]);
         }
+
+        unsigned j = numDoubleIndSect % NUM_INDIRECT;
+        printf("\n     table[%u]: ", numInTables - 1);
+        for (unsigned i = 0; i < j; i++)
+            printf("%u ", simpleDoublesT[numInTables - 1].dataSectors[i]);
+        
+        printf("\n");
     }
 
     // contenido de bloques directos
@@ -292,7 +299,8 @@ FileHeader::Print(const char *title)
             }
             printf("\n");
         }
-
+    }
+    if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
         // contenido de segundo nivel de indireccion
         for (unsigned x = 0; x < numInTables - 1; x++) {
             for (unsigned i = 0; i < NUM_INDIRECT; i++) {
@@ -310,17 +318,17 @@ FileHeader::Print(const char *title)
         }
         unsigned ult = numDoubleIndSect % NUM_INDIRECT;
         for (unsigned i = 0; i < ult; i++) {
-                printf("    contents of block %u:\n", simpleDoublesT[numInTables - 1].dataSectors[i]);
-                synchDisk->ReadSector(simpleDoublesT[numInTables - 1].dataSectors[i], data);
-                for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
-                    if (isprint(data[j])) {
-                        printf("%c", data[j]);
-                    } else {
-                        printf("\\%X", (unsigned char) data[j]);
-                    }
+            printf("    contents of block %u:\n", simpleDoublesT[numInTables - 1].dataSectors[i]);
+            synchDisk->ReadSector(simpleDoublesT[numInTables - 1].dataSectors[i], data);
+            for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
+                if (isprint(data[j])) {
+                    printf("%c", data[j]);
+                } else {
+                    printf("\\%X", (unsigned char) data[j]);
                 }
-                printf("\n");
             }
+            printf("\n");
+        }
     }   
     delete [] data;
 }

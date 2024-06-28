@@ -130,6 +130,9 @@ public:
     /// Delete a file (UNIX `unlink`).
     bool Remove(const char *name);
 
+    // Aux function for remove.
+    void Release(int sector);
+
     /// List all the files in the file system.
     void List();
 
@@ -139,7 +142,7 @@ public:
     /// List all the files and their contents.
     void Print();
 
-    void CloseOpenFile(int sector);
+    bool CloseOpenFile(int sector);
 
     Bitmap *AquireFreeMap();
 

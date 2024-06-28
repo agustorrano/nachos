@@ -272,29 +272,35 @@ FileSystem::Remove(const char *name)
         delete dir;
         return false;  // file not found
     }
+    
+    // siempre se borra del directorio
+    dir->Remove(name);
+    dir->WriteBack(directoryFile);    // Flush to disk.
+
     if (openfiles->IsOpen(sector))
-        openfiles->MarkToDelete(sector);
+        openfiles->MarkToDelete(sector); // marcamos que deberá borrarse del disco
+        // se elimina del directorio pero no del disco
     else {
-        FileHeader *fileH = new FileHeader;
-        fileH->FetchFrom(sector);
-
-        Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-        lockBitmap->Acquire();
-        freeMap->FetchFrom(freeMapFile);
-
-        fileH->Deallocate(freeMap);  // Remove data blocks.
-        freeMap->Clear(sector);      // Remove header block.
-        dir->Remove(name);
-
-        freeMap->WriteBack(freeMapFile);  // Flush to disk.
-        dir->WriteBack(directoryFile);    // Flush to disk.
-        lockBitmap->Release();
-        delete fileH;
-        delete freeMap;
+        Release(sector);
     }
     lockDirectory->Release();
     delete dir;
     return true;
+}
+
+void 
+FileSystem::Release(int sector) {
+    FileHeader *fileH = new FileHeader;
+    fileH->FetchFrom(sector);
+    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
+    lockBitmap->Acquire();
+    freeMap->FetchFrom(freeMapFile);
+    fileH->Deallocate(freeMap);  // Remove data blocks.
+    freeMap->Clear(sector);      // Remove header block.
+    freeMap->WriteBack(freeMapFile);  // Flush to disk.
+    lockBitmap->Release();
+    delete fileH;
+    delete freeMap;
 }
 
 /// List all the files in the file system directory.
@@ -521,10 +527,10 @@ FileSystem::Print()
 
 }
 
-void
+bool
 FileSystem::CloseOpenFile(int sector) 
 {
-    openfiles->CloseOpenFile(sector);
+    return openfiles->CloseOpenFile(sector);
 }
 
 Bitmap *
