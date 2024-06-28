@@ -2,7 +2,6 @@
 #define NACHOS_FILESYS_OPENFILETABLE__HH
 
 #include <string.h>
-#include <unordered_map>
 #include "directory_entry.hh"
 
 class OpenFileEntry {
@@ -12,21 +11,29 @@ public:
 
     unsigned numThreads;
 
+    int sector;
+
     char name[FILE_NAME_MAX_LEN + 1];
-    
-    // Constructor por defecto
-    OpenFileEntry() : toDelete(false), numThreads(0) {
-        name[0] = '\0'; 
-    }
-    
-    OpenFileEntry(char* name);
+
+    OpenFileEntry *next;
+
+    OpenFileEntry(int s, char* name);
 
     ~OpenFileEntry();
 };
+typedef OpenFileEntry ListNode;
 
-class OpenFileTable {
+
+class OpenFileList {
 public:
-    bool OpenFileAdd(int sector, const char* name);
+    
+    OpenFileList();
+
+    ~OpenFileList();
+
+    bool IsEmpty();
+
+    bool OpenFileAdd(int sector, char *name);
 
     bool IsOpen(int sector);
 
@@ -34,8 +41,41 @@ public:
 
     void CloseOpenFile(int sector);
 
+    typedef OpenFileEntry ListNode;
+
+    ListNode *first;  ///< Head of the list, null if list is empty.
+    ListNode *last;   ///< Last element of list.
+    
+    int size;
+};
+
+#define TABLE_INIT_CAPACITY 10
+
+class OpenFileTable{ // tabla hash
 private:
-    std::unordered_map<int, OpenFileEntry> openFilesTable;
+  	OpenFileList *table; // tabla donde cada casillero es una lista
+  	int numElems;
+	int capacity;
+
+  	// Funcion Hash
+  	int getHash(int key){
+  	  return key % numElems;
+  	}
+
+public: 
+    OpenFileTable(int capacity);
+
+    ~OpenFileTable();
+	
+	void ReHash();
+
+    bool OpenFileAdd(int sector, char *name);
+
+    bool IsOpen(int sector);
+
+    void MarkToDelete(int sector);
+
+    void CloseOpenFile(int sector);
 };
 
 #endif

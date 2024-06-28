@@ -68,12 +68,6 @@ private:
     IndirectT simpleT;
     IndirectT doubleT;
     IndirectT simpleDoublesT [NUM_INDIRECT];
-
-    unsigned numDirSect;
-    unsigned numIndSect;
-    unsigned numSimpleIndSect;
-    unsigned numDoubleIndSect;
-    unsigned numInTables;
 };
 
 

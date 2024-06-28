@@ -47,14 +47,14 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     if (fileSize > MAX_FILE_SIZE) {
         return false;
     }
-
     raw.numBytes = fileSize;
     raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    numDirSect = min(raw.numSectors, NUM_DIRECT);
-    numIndSect = raw.numSectors - numDirSect;
-    numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
-    numDoubleIndSect = numIndSect - numSimpleIndSect;
-    numInTables = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+
+    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
+    unsigned numIndSect       = raw.numSectors - numDirSect;
+    unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+    unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
+    unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
     
     // alocamos los sectores directos
     for (unsigned i = 0; i < numDirSect; i++) {
@@ -93,6 +93,12 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
+    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
+    unsigned numIndSect       = raw.numSectors - numDirSect;
+    unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
+    unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
+    unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
+    
     if (numDoubleIndSect > 0) {
 
         // desalocamos por completo
@@ -140,6 +146,13 @@ void
 FileHeader::FetchFrom(unsigned sector)
 {
     synchDisk->ReadSector(sector, (char *) &raw);
+    synchDisk->ReadSector(raw.simpleIndirectT, (char*) &simpleT);
+    synchDisk->ReadSector(raw.doubleIndirectT, (char*) &doubleT);
+    unsigned numInTables; // completar
+    for (int i = 0; i < numInTables; i++) {
+        unsigned sector = doubleT.dataSectors[i];
+        synchDisk->ReadSector(sector, (char*) &simpleDoublesT[i]);
+    }
 }
 
 /// Write the modified contents of the file header back to disk.
@@ -149,6 +162,13 @@ void
 FileHeader::WriteBack(unsigned sector)
 {
     synchDisk->WriteSector(sector, (char *) &raw);
+    synchDisk->WriteSector(raw.simpleIndirectT, (char*) &simpleT);
+    synchDisk->WriteSector(raw.doubleIndirectT, (char*) &doubleT);
+    unsigned numInTables; // completar
+    for (int i = 0; i < numInTables; i++) {
+        unsigned sector = doubleT.dataSectors[i];
+        synchDisk->WriteSector(sector, (char*) &simpleDoublesT[i]);
+    }
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -160,7 +180,13 @@ FileHeader::WriteBack(unsigned sector)
 unsigned
 FileHeader::ByteToSector(unsigned offset)
 {
-    return raw.dataSectors[offset / SECTOR_SIZE];
+    if (offset < NUM_DIRECT * SECTOR_SIZE) // esta en los bloques directos
+        return raw.dataSectors[offset / SECTOR_SIZE];
+    else if (offset < ((NUM_DIRECT * SECTOR_SIZE) + (NUM_INDIRECT * SECTOR_SIZE))) 
+        return ... // esta en el primer nivel de indirecc
+    else { // está en el segundo nivel de indirecc
+        return ...
+    }
 }
 
 /// Return the number of bytes in the file.
@@ -184,13 +210,15 @@ FileHeader::Print(const char *title)
     }
 
     printf("    size: %u bytes\n"
-           "    block indexes: ",
+           "    direct block indexes: ",
            raw.numBytes);
 
     for (unsigned i = 0; i < raw.numSectors; i++) {
         printf("%u ", raw.dataSectors[i]);
     }
     printf("\n");
+
+    // acá habria que agregar los indirect block indexes
 
     for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
         printf("    contents of block %u:\n", raw.dataSectors[i]);
@@ -204,6 +232,7 @@ FileHeader::Print(const char *title)
         }
         printf("\n");
     }
+    // acá habría que agregar los contenidos de los indirect blocks
     delete [] data;
 }
 
