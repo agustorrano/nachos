@@ -164,7 +164,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         unsigned extendSize = position + numBytes - fileLength;
         Bitmap *freeMap = fileSystem->AquireFreeMap();
         // no se pudo extender el archivo
+        DEBUG('f', "Extending file.\n");
         if(!hdr->Extend(freeMap, extendSize)) {
+            DEBUG('f', "Unable to extend the file.\n");
             fileSystem->ReleaseFreeMap(freeMap);
             return 0;
         }

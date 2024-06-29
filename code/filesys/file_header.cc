@@ -344,6 +344,8 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
 {
     ASSERT(freeMap != nullptr);
 
+    DEBUG('f', "Extending %u to already %u.\n", extendSize, raw.numBytes);
+
     unsigned oldNumBytes         = raw.numBytes;
     unsigned oldNumSectors       = raw.numSectors;
     unsigned oldNumDirSect       = min(raw.numSectors, NUM_DIRECT);
@@ -363,12 +365,14 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
 
     // ya tengo la cantidad de sectores necesarios
     if (oldNumSectors == raw.numSectors) {
+        DEBUG('f', "It is not necessary to add secotrs.\n");
         return true;
     }
 
     // debemos asegurarnos que el tamaño del archivo no sea tan
     // grande
     if (freeMap->CountClear() < raw.numSectors - oldNumSectors || raw.numBytes > MAX_FILE_SIZE) {
+        DEBUG('f', "Not enough space to extend the file.\n");
         raw.numBytes = oldNumBytes;
         raw.numSectors = oldNumSectors;
         return false;
@@ -424,5 +428,6 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
 
     }
 
+    DEBUG('f', "Success extending the file with size %u.\n", raw.numBytes);
     return true;
 }

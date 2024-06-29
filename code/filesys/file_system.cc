@@ -190,16 +190,20 @@ FileSystem::Create(const char *name, unsigned initialSize)
     bool success;
 
     if (dir->Find(name) != -1) {
+        DEBUG('f', "File %s is already in directory.\n", name);
         success = false;  // File is already in directory.
     } else {
         Bitmap *freeMap = new Bitmap(NUM_SECTORS);
         lockBitmap->Acquire();
         freeMap->FetchFrom(freeMapFile);
         int sector = freeMap->Find();
-          // Find a sector to hold the file header.
+
+        // Find a sector to hold the file header.
         if (sector == -1) {
+            DEBUG('f', "No free block for file header.\n");
             success = false;  // No free block for file header.
         } else if (!dir->Add(name, sector)) {
+            DEBUG('f', "No space in directory for file %s.\n", name);
             success = false;  // No space in directory.
         } else {
             FileHeader *h = new FileHeader;
@@ -207,6 +211,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
               // Fails if no space on disk for data.
             if (success) {
                 // Everything worked, flush all changes back to disk.
+                DEBUG('f', "Successful creation of file %s.\n", name);
                 h->WriteBack(sector);
                 dir->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
@@ -241,9 +246,12 @@ FileSystem::Open(const char *name)
     int sector = dir->Find(name);
     lockDirectory->Release();
     if (sector >= 0 && openfiles->OpenFileAdd(sector, (char*)name)) {
+        DEBUG('f', "We add the file to the table for the first time.\n");
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
     delete dir;
+    if (openFile != nullptr)
+        DEBUG('f', "Saccessful opening file %s.\n", name);
     return openFile;  // Return null if not found.
 }
 
@@ -262,12 +270,14 @@ FileSystem::Open(const char *name)
 bool
 FileSystem::Remove(const char *name)
 {
+    DEBUG('f', "Removing file %s\n", name);
     ASSERT(name != nullptr);
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile);
     int sector = dir->Find(name);
     if (sector == -1) {
+        DEBUG('f', "Unable to remove because file %s was not found.\n", name);
         lockDirectory->Release();
         delete dir;
         return false;  // file not found
@@ -537,7 +547,7 @@ Bitmap *
 FileSystem::AquireFreeMap()
 {
     Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-    lockBitmap->Acquire();
+    // lockBitmap->Acquire();
     freeMap->FetchFrom(freeMapFile);
     return freeMap;
 }
@@ -546,6 +556,6 @@ void
 FileSystem::ReleaseFreeMap(Bitmap *freeMap)
 {
     freeMap->WriteBack(freeMapFile);
-    lockBitmap->Release();
+    // lockBitmap->Release();
     delete freeMap;
 }
