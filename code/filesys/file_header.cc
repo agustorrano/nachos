@@ -59,12 +59,12 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     // sector para la tabla de primera indireccion
     if (numSimpleIndSect > 0) {numOtherSectors++;} 
     // sectores para la tabla de segunda indireccion y las tablas dentro de ella
-    if (numDoubleIndSect > 0) {numOtherSectors = numOtherSectors + numInTables + 1;}
+    if (numDoubleIndSect > 0) {numOtherSectors += numInTables + 1;}
 
-    raw.numSectors = numDataSectors + numOtherSectors;
-    if (freeMap->CountClear() < raw.numSectors) {
+    if (freeMap->CountClear() < numDataSectors + numOtherSectors) {
         return false;  // Not enough space.
     }
+    raw.numSectors = numDataSectors;
 
     // alocamos los sectores directos
     for (unsigned i = 0; i < numDirSect; i++) {
@@ -357,39 +357,54 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
     DEBUG('f', "Extending %u to already %u.\n", extendSize, raw.numBytes);
 
     unsigned oldNumBytes         = raw.numBytes;
-    unsigned oldNumSectors       = raw.numSectors;
-    unsigned oldNumDirSect       = min(raw.numSectors, NUM_DIRECT);
-    unsigned oldNumIndSect       = raw.numSectors - oldNumDirSect;
-    unsigned oldNumSimpleIndSect = min(oldNumIndSect, NUM_INDIRECT);
+    unsigned oldNumDataSectors   = raw.numSectors; // aca hay solo sectores de datos
+    unsigned oldNumOtherSectors  = 0; // lo vamos a calcular ahora
+
+    unsigned oldNumDirSect       = min(oldNumDataSectors, NUM_DIRECT);
+    unsigned oldNumIndSect       = oldNumDataSectors - oldNumDirSect;
+    unsigned oldNumSimpleIndSect = min(oldNumIndSect, NUM_INDIRECT); 
     unsigned oldNumDoubleIndSect = oldNumIndSect - oldNumSimpleIndSect;
     unsigned oldNumInTables      = DivRoundUp(oldNumDoubleIndSect, NUM_INDIRECT);
 
-    raw.numBytes += extendSize;
-    raw.numSectors = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+     // sector para la tabla de primera indireccion
+    if (oldNumSimpleIndSect > 0) {oldNumOtherSectors++;} 
+    // sectores para la tabla de segunda indireccion y las tablas dentro de ella
+    if (oldNumDoubleIndSect > 0) {oldNumOtherSectors += oldNumInTables + 1;}
 
-    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-    unsigned numIndSect       = raw.numSectors - numDirSect;
+    raw.numBytes += extendSize;
+    unsigned numDataSectors   = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+    unsigned numOtherSectors  = 0; // lo calculo de cero
+    unsigned numDirSect       = min(numDataSectors, NUM_DIRECT);
+    unsigned numIndSect       = numDataSectors - numDirSect;
     unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
     unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
     unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
 
+     // sector para la tabla de primera indireccion
+    if (numSimpleIndSect > 0) {numOtherSectors++;} 
+    // sectores para la tabla de segunda indireccion y las tablas dentro de ella
+    if (numDoubleIndSect > 0) {numOtherSectors += numInTables + 1;}
+
+    raw.numSectors = numDataSectors;
+
     // ya tengo la cantidad de sectores necesarios
-    if (oldNumSectors == raw.numSectors) {
+    if (oldNumDataSectors == numDataSectors) {
+        ASSERT(oldNumOtherSectors == numOtherSectors);
         DEBUG('f', "It is not necessary to add secotrs.\n");
         return true;
     }
 
     // debemos asegurarnos que el tamaño del archivo no sea tan
     // grande
-    if (freeMap->CountClear() < raw.numSectors - oldNumSectors || raw.numBytes > MAX_FILE_SIZE) {
+    if (freeMap->CountClear() < ((numDataSectors + numOtherSectors) - (oldNumDataSectors + oldNumOtherSectors)) || raw.numBytes > MAX_FILE_SIZE) {
         DEBUG('f', "Not enough space to extend the file.\n");
         raw.numBytes = oldNumBytes;
-        raw.numSectors = oldNumSectors;
+        raw.numSectors = oldNumDataSectors;
         return false;
     }
 
     // alocamos lo que falte de los sectores directos
-    for (unsigned i = oldNumSectors; i < numDirSect; i++) {
+    for (unsigned i = oldNumDataSectors; i < numDirSect; i++) {
         // DEBUG('f', "Alocamos lo que falte de los sectores directos.\n");
         raw.dataSectors[i] = freeMap->Find();
     }
