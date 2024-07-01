@@ -48,14 +48,24 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
         return false;
     }
     raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-
-    unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-    unsigned numIndSect       = raw.numSectors - numDirSect;
+    unsigned numDataSectors = DivRoundUp(fileSize, SECTOR_SIZE); // cantidad de sectores que guardaran datos
+    unsigned numOtherSectors = 0;
+    unsigned numDirSect       = min(numDataSectors, NUM_DIRECT);
+    unsigned numIndSect       = numDataSectors - numDirSect;
     unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
     unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
     unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
-    
+
+    // sector para la tabla de primera indireccion
+    if (numSimpleIndSect > 0) {numOtherSectors++;} 
+    // sectores para la tabla de segunda indireccion y las tablas dentro de ella
+    if (numDoubleIndSect > 0) {numOtherSectors = numOtherSectors + numInTables + 1;}
+
+    raw.numSectors = numDataSectors + numOtherSectors;
+    if (freeMap->CountClear() < raw.numSectors) {
+        return false;  // Not enough space.
+    }
+
     // alocamos los sectores directos
     for (unsigned i = 0; i < numDirSect; i++) {
         raw.dataSectors[i] = freeMap->Find();
@@ -380,13 +390,17 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
 
     // alocamos lo que falte de los sectores directos
     for (unsigned i = oldNumSectors; i < numDirSect; i++) {
+        // DEBUG('f', "Alocamos lo que falte de los sectores directos.\n");
         raw.dataSectors[i] = freeMap->Find();
     }
 
     // alocamos la tabla de primer nivel
     if (oldNumSimpleIndSect < numSimpleIndSect) {
-        if (oldNumSimpleIndSect == 0)
+        // DEBUG('f', "Alocamos la tabla de primer nivel.\n");
+        if (oldNumSimpleIndSect == 0) {
+            // DEBUG('f', "Alocamos la tabla de primer nivel por primera vez.\n");
             raw.simpleIndirectT = freeMap->Find();
+        }
         
         for (unsigned i = oldNumSimpleIndSect; i < numSimpleIndSect; i++)
             simpleT.dataSectors[i] = freeMap->Find(); 
@@ -394,27 +408,34 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
 
     // alocamos la tabla de segundo nivel
     if (oldNumDoubleIndSect < numDoubleIndSect) {
+        // DEBUG('f', "Alocamos la tabla de segundo nivel.\n");
         unsigned k = oldNumDoubleIndSect % NUM_INDIRECT;
 
-        if (oldNumDoubleIndSect == 0)
+        if (oldNumDoubleIndSect == 0) {
+            // DEBUG('f', "Alocamos la tabla de segundo nivel por primera vez.\n");
             raw.doubleIndirectT = freeMap->Find();
+        }
 
         // si la cantidad de tablas es la misma, como el número de sectores
         // es mayor, sólo habría que alocar más sectores de la última tabla        
         if (oldNumInTables == numInTables) {
+            // DEBUG('f', "Alocamos más sectores a la última tabla, oldNumInTables=%u, numInTables=%u, oldNumDoubleIndSect=%u, numDoubleIndSect=%u.\n", oldNumInTables, numInTables, oldNumDoubleIndSect, numDoubleIndSect);
             ASSERT(k != 0);
-            for (unsigned i = k; i < numDoubleIndSect - oldNumDoubleIndSect; i++)
+            //DEBUG('f', "k = %u\n", k);
+            for (unsigned i = k; i < numDoubleIndSect - oldNumDoubleIndSect + 1; i++)
                 simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find();
         }
         
         if (oldNumInTables < numInTables) {
             if (k != 0) {
+                // DEBUG('f', "Alocamos los sectores restantes de la última tabla.\n");
                 // alocamos los sectores restantes de la última tabla
                 for (unsigned i = k; i < NUM_INDIRECT; i++)
                     simpleDoublesT[oldNumInTables - 1].dataSectors[i] = freeMap->Find();
             }
 
             for (unsigned i = oldNumInTables; i < numInTables - 1; i++) {
+                // DEBUG('f', "Alocamos las tablas.\n");
                 doubleT.dataSectors[i] = freeMap->Find();
                 for (unsigned j = 0; j < NUM_INDIRECT; j++)
                     simpleDoublesT[i].dataSectors[j] = freeMap->Find();
