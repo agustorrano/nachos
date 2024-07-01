@@ -20,11 +20,11 @@ struct RawFileHeader {
     unsigned numSectors;  ///< Number of data sectors in the file.
     unsigned dataSectors[NUM_DIRECT];  ///< Disk sector numbers for each data
                                        ///< block in the file.
-    unsigned simpleIndirectT;
-    unsigned doubleIndirectT;
+    unsigned simpleIndirectH;
+    unsigned doubleIndirectH;
 };  
 
-struct IndirectT
+struct IndirectHeader
 {
   unsigned dataSectors[NUM_INDIRECT];
 };

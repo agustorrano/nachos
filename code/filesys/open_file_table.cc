@@ -71,8 +71,11 @@ OpenFileList::IsOpen(int sector)
 {
     ListNode *ptr;
     for (ptr = first; ptr != nullptr; ptr = ptr->next)
-        if (ptr->sector == sector)
-            return true;
+        if (ptr->sector == sector) {
+            if (ptr->numThreads > 0)
+                return true;
+            return false;
+        }
     return false;
 }
 

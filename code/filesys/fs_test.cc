@@ -169,6 +169,11 @@ FileRead()
     delete openFile;
 }
 
+static void
+FilePrint() {
+    fileSystem->Print();
+}
+
 void
 PerformanceTest()
 {

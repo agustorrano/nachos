@@ -72,24 +72,37 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     }
 
     if (numIndSect > 0) {
+        IndirectHeader *simpleIH = new IndirectHeader;
         // alocamos los sectores indirectos de primer nivel
-        raw.simpleIndirectT = freeMap->Find();
+        raw.simpleIndirectH = freeMap->Find();
         for (unsigned j = 0; j < numSimpleIndSect; j++)
-            simpleT.dataSectors[j] = freeMap->Find(); 
+            simpleIH->dataSectors[j] = freeMap->Find(); 
         
+        ((FileHeader*) simpleIH)->WriteBack(raw.simpleIndirectH);
+        delete simpleIH;
         if (numIndSect - numSimpleIndSect > 0) {
+            IndirectHeader *doubleIH = new IndirectHeader;
+            IndirectHeader *arrayIH[NUM_INDIRECT];
             // alocamos los sectores indirectos de segundo nivel
-            raw.doubleIndirectT = freeMap->Find();
+            raw.doubleIndirectH = freeMap->Find();
 
             for (unsigned i = 0; i < numInTables - 1; i++) {
-                doubleT.dataSectors[i] = freeMap->Find();
+                doubleIH->dataSectors[i] = freeMap->Find();
+                arrayIH[i] = new IndirectHeader;
                 for (unsigned j = 0; j < NUM_INDIRECT; j++)
-                    simpleDoublesT[i].dataSectors[j] = freeMap->Find(); 
+                    arrayIH[i]->dataSectors[j] = freeMap->Find();
             }
-            doubleT.dataSectors[numInTables - 1] = freeMap->Find();
             unsigned j = numDoubleIndSect % NUM_INDIRECT;
-            for (unsigned i = 0; i < j; i++)
-                simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find(); 
+            arrayIH[numInTables - 1] = new IndirectHeader;
+            doubleIH->dataSectors[numInTables - 1] = freeMap->Find();
+            for (unsigned i = 0; i < j; i++) 
+               arrayIH[numInTables - 1]->dataSectors[i] = freeMap->Find(); 
+            ((FileHeader*) doubleIH)->WriteBack(raw.doubleIndirectH);
+            for (unsigned i = 0; i < numInTables; i++) {
+                ((FileHeader*) arrayIH[i])->WriteBack(doubleIH->dataSectors[i]);
+                delete arrayIH[i];
+            }
+            delete doubleIH;
         }
     }
     return true;
@@ -110,36 +123,54 @@ FileHeader::Deallocate(Bitmap *freeMap)
     unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
     
     if (numDoubleIndSect > 0) {
+        ASSERT(freeMap->Test(raw.doubleIndirectH));
+        IndirectHeader *doubleIH = new IndirectHeader;
+        ((FileHeader*)doubleIH)->FetchFrom(raw.doubleIndirectH);
+        
+        IndirectHeader *arrayIH[NUM_INDIRECT];
+        for (unsigned i = 0; i < numInTables; i++) {
+            arrayIH[i] = new IndirectHeader;
+            ((FileHeader*) arrayIH[i])->FetchFrom(doubleIH->dataSectors[i]);
+        }
 
         // desalocamos por completo
         for (unsigned i = 0; i < numInTables - 1; i++) {
             for (unsigned j = 0; j < NUM_INDIRECT; j++) {
-                ASSERT(freeMap->Test(simpleDoublesT[i].dataSectors[j]));
-                freeMap->Clear(simpleDoublesT[i].dataSectors[j]);
+                ASSERT(freeMap->Test(arrayIH[i]->dataSectors[j]));
+                freeMap->Clear(arrayIH[i]->dataSectors[j]);
             }
-            ASSERT(freeMap->Test(doubleT.dataSectors[i]));
-            freeMap->Clear(doubleT.dataSectors[i]);
+            ASSERT(freeMap->Test(doubleIH->dataSectors[i]));
+            freeMap->Clear(doubleIH->dataSectors[i]);
         }
 
         // desalocamos lo necesario de la ultima tabla
         unsigned j = numDoubleIndSect % NUM_INDIRECT;
         for (unsigned i = 0; i < j; i++) {
-            ASSERT(freeMap->Test(simpleDoublesT[numInTables - 1].dataSectors[i]));
-            freeMap->Clear(simpleDoublesT[numInTables - 1].dataSectors[i]);
+            ASSERT(freeMap->Test(arrayIH[numInTables - 1]->dataSectors[i]));
+            freeMap->Clear(arrayIH[numInTables - 1]->dataSectors[i]);
         }
-        ASSERT(freeMap->Test(doubleT.dataSectors[numInTables - 1]));
-        freeMap->Clear(doubleT.dataSectors[numInTables - 1]);
+        ASSERT(freeMap->Test(doubleIH->dataSectors[numInTables - 1]));
+        freeMap->Clear(doubleIH->dataSectors[numInTables - 1]);
+        
+        for (unsigned i = 0; i < numInTables; i++)
+            delete arrayIH[i];
 
+        delete doubleIH;
+        freeMap->Clear(raw.doubleIndirectH);
     }
 
     if (numSimpleIndSect > 0) {
+        ASSERT(freeMap->Test(raw.simpleIndirectH));
+        IndirectHeader *simpleIH = new IndirectHeader;
+        ((FileHeader*)simpleIH)->FetchFrom(raw.simpleIndirectH);
+
         for (unsigned j = 0; j < numSimpleIndSect; j++) {
-            ASSERT(freeMap->Test(simpleT.dataSectors[j]));
-            freeMap->Clear(simpleT.dataSectors[j]);
+            ASSERT(freeMap->Test(simpleIH->dataSectors[j]));
+            freeMap->Clear(simpleIH->dataSectors[j]);
         }
         
-        ASSERT(freeMap->Test(raw.simpleIndirectT));
-        freeMap->Clear(raw.simpleIndirectT);
+        freeMap->Clear(raw.simpleIndirectH);
+        delete simpleIH;
     }
 
     // desalocamos los sectores directos
@@ -156,23 +187,6 @@ void
 FileHeader::FetchFrom(unsigned sector)
 {
     synchDisk->ReadSector(sector, (char *) &raw);
-    if (raw.numSectors >= NUM_DIRECT) {
-        synchDisk->ReadSector(raw.simpleIndirectT, (char*) &simpleT);
-        if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
-            synchDisk->ReadSector(raw.doubleIndirectT, (char*) &doubleT);
-
-            unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-            unsigned numIndSect       = raw.numSectors - numDirSect;
-            unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
-            unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
-            unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
-
-            for (unsigned i = 0; i < numInTables; i++) {
-                unsigned sec = doubleT.dataSectors[i];
-                synchDisk->ReadSector(sec, (char*) &simpleDoublesT[i]);
-            }
-        }
-    }
 }
 
 /// Write the modified contents of the file header back to disk.
@@ -182,23 +196,6 @@ void
 FileHeader::WriteBack(unsigned sector)
 {
     synchDisk->WriteSector(sector, (char *) &raw);
-    if (raw.numSectors >= NUM_DIRECT) {
-        synchDisk->WriteSector(raw.simpleIndirectT, (char*) &simpleT);
-        if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
-            synchDisk->WriteSector(raw.doubleIndirectT, (char*) &doubleT);
-
-            unsigned numDirSect       = min(raw.numSectors, NUM_DIRECT);
-            unsigned numIndSect       = raw.numSectors - numDirSect;
-            unsigned numSimpleIndSect = min(numIndSect, NUM_INDIRECT);
-            unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
-            unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
-
-            for (unsigned i = 0; i < numInTables; i++) {
-                unsigned sec = doubleT.dataSectors[i];
-                synchDisk->WriteSector(sec, (char*) &simpleDoublesT[i]);
-            }
-        }
-    }
 }   
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -214,12 +211,24 @@ FileHeader::ByteToSector(unsigned offset)
     if (numSector < NUM_DIRECT) // esta en los bloques directos
         return raw.dataSectors[numSector];
 
-    else if (numSector < NUM_DIRECT + NUM_INDIRECT) 
-        return simpleT.dataSectors[numSector - NUM_DIRECT]; // esta en el primer nivel de indirecc
+    else if (numSector < NUM_DIRECT + NUM_INDIRECT) {
+        IndirectHeader *simpleIH = new IndirectHeader;
+        ((FileHeader*)simpleIH)->FetchFrom(raw.simpleIndirectH);
+        unsigned result = simpleIH->dataSectors[numSector - NUM_DIRECT];
+        delete simpleIH;
+        return result; // esta en el primer nivel de indirecc
+    }
     else { // está en el segundo nivel de indirecc
         int numTable = (numSector - NUM_DIRECT - NUM_INDIRECT) / NUM_INDIRECT;
         int sector =  (numSector - NUM_DIRECT - NUM_INDIRECT) % NUM_INDIRECT;
-        return simpleDoublesT[numTable].dataSectors[sector];
+        IndirectHeader *doubleIH = new IndirectHeader;
+        ((FileHeader*)doubleIH)->FetchFrom(raw.doubleIndirectH);
+        IndirectHeader *internDoubleIH = new IndirectHeader;
+        ((FileHeader*)internDoubleIH)->FetchFrom(doubleIH->dataSectors[numTable]);
+        unsigned result = internDoubleIH->dataSectors[sector];
+        delete doubleIH;
+        delete internDoubleIH;
+        return result;
     }
 }
 
@@ -253,30 +262,43 @@ FileHeader::Print(const char *title)
     unsigned numDoubleIndSect = numIndSect - numSimpleIndSect;
     unsigned numInTables      = DivRoundUp(numDoubleIndSect, NUM_INDIRECT);
 
+    IndirectHeader *simpleIH = new IndirectHeader;
+    IndirectHeader *doubleIH = new IndirectHeader;
+    IndirectHeader *arrayIH[NUM_INDIRECT];
+
     for (unsigned i = 0; i < numDirSect; i++) {
         printf("%u ", raw.dataSectors[i]);
     }
     printf("\n");
 
-    if (raw.numSectors >= NUM_DIRECT) {
+    if (raw.numSectors > NUM_DIRECT) {
+        ((FileHeader*)simpleIH)->FetchFrom(raw.simpleIndirectH);
+
         printf("    first level indirect block indexes: ");
 
         for (unsigned i = 0; i < numSimpleIndSect; i++)
-            printf("%u ", simpleT.dataSectors[i]);
+            printf("%u ", simpleIH->dataSectors[i]);
         printf("\n");
     }
-    if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
+    if (raw.numSectors > NUM_DIRECT + NUM_INDIRECT) {
+        ((FileHeader*)doubleIH)->FetchFrom(raw.doubleIndirectH);
+        
+        for (unsigned i = 0; i < numInTables; i++) {
+            arrayIH[i] = new IndirectHeader;
+            ((FileHeader*) arrayIH[i])->FetchFrom(doubleIH->dataSectors[i]);
+        }
+
         printf("    second level indirect block indexes: ");
         for (unsigned i = 0; i < numInTables - 1; i++) {
             printf("\n     table[%u]: ", i);
             for (unsigned j = 0; j < NUM_INDIRECT; j++)
-                printf("%u ", simpleDoublesT[i].dataSectors[j]);
+                printf("%u ", arrayIH[i]->dataSectors[j]);
         }
 
         unsigned j = numDoubleIndSect % NUM_INDIRECT;
         printf("\n     table[%u]: ", numInTables - 1);
         for (unsigned i = 0; i < j; i++)
-            printf("%u ", simpleDoublesT[numInTables - 1].dataSectors[i]);
+            printf("%u ", arrayIH[numInTables - 1]->dataSectors[i]);
         
         printf("\n");
     }
@@ -295,11 +317,11 @@ FileHeader::Print(const char *title)
         }
         printf("\n");
     }
-    if (raw.numSectors >= NUM_DIRECT) {
+    if (raw.numSectors > NUM_DIRECT) {
         // contenido de primer nivel de indireccion
         for (unsigned i = 0; i < numSimpleIndSect; i++) {
-            printf("    contents of block %u:\n", simpleT.dataSectors[i]);
-            synchDisk->ReadSector(simpleT.dataSectors[i], data);
+            printf("    contents of block %u:\n", simpleIH->dataSectors[i]);
+            synchDisk->ReadSector(simpleIH->dataSectors[i], data);
             for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
                 if (isprint(data[j])) {
                     printf("%c", data[j]);
@@ -309,13 +331,14 @@ FileHeader::Print(const char *title)
             }
             printf("\n");
         }
+        delete simpleIH;
     }
-    if (raw.numSectors >= NUM_DIRECT + NUM_INDIRECT) {
+    if (raw.numSectors > NUM_DIRECT + NUM_INDIRECT) {
         // contenido de segundo nivel de indireccion
         for (unsigned x = 0; x < numInTables - 1; x++) {
             for (unsigned i = 0; i < NUM_INDIRECT; i++) {
-                printf("    contents of block %u:\n", simpleDoublesT[x].dataSectors[i]);
-                synchDisk->ReadSector(simpleDoublesT[x].dataSectors[i], data);
+                printf("    contents of block %u:\n", arrayIH[x]->dataSectors[i]);
+                synchDisk->ReadSector(arrayIH[x]->dataSectors[i], data);
                 for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
                     if (isprint(data[j])) {
                         printf("%c", data[j]);
@@ -328,8 +351,8 @@ FileHeader::Print(const char *title)
         }
         unsigned ult = numDoubleIndSect % NUM_INDIRECT;
         for (unsigned i = 0; i < ult; i++) {
-            printf("    contents of block %u:\n", simpleDoublesT[numInTables - 1].dataSectors[i]);
-            synchDisk->ReadSector(simpleDoublesT[numInTables - 1].dataSectors[i], data);
+            printf("    contents of block %u:\n", arrayIH[numInTables - 1]->dataSectors[i]);
+            synchDisk->ReadSector(arrayIH[numInTables - 1]->dataSectors[i], data);
             for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
                 if (isprint(data[j])) {
                     printf("%c", data[j]);
@@ -339,6 +362,10 @@ FileHeader::Print(const char *title)
             }
             printf("\n");
         }
+        delete doubleIH;
+        for (unsigned i = 0; i < numInTables; i++)
+            delete arrayIH[i];
+
     }   
     delete [] data;
 }
@@ -412,55 +439,82 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize)
     // alocamos la tabla de primer nivel
     if (oldNumSimpleIndSect < numSimpleIndSect) {
         // DEBUG('f', "Alocamos la tabla de primer nivel.\n");
+        IndirectHeader *simpleIH = new IndirectHeader;
         if (oldNumSimpleIndSect == 0) {
             // DEBUG('f', "Alocamos la tabla de primer nivel por primera vez.\n");
-            raw.simpleIndirectT = freeMap->Find();
+            raw.simpleIndirectH = freeMap->Find();
         }
-        
+        else {
+            ((FileHeader*)simpleIH)->FetchFrom(raw.simpleIndirectH);
+        }
         for (unsigned i = oldNumSimpleIndSect; i < numSimpleIndSect; i++)
-            simpleT.dataSectors[i] = freeMap->Find(); 
+            simpleIH->dataSectors[i] = freeMap->Find(); 
+
+        ((FileHeader*)simpleIH)->WriteBack(raw.simpleIndirectH);
+        delete simpleIH;
     }
 
     // alocamos la tabla de segundo nivel
     if (oldNumDoubleIndSect < numDoubleIndSect) {
-        // DEBUG('f', "Alocamos la tabla de segundo nivel.\n");
+        //DEBUG('y', "Alocamos la tabla de segundo nivel.\n");
         unsigned k = oldNumDoubleIndSect % NUM_INDIRECT;
+        IndirectHeader *doubleIH = new IndirectHeader;
 
         if (oldNumDoubleIndSect == 0) {
-            // DEBUG('f', "Alocamos la tabla de segundo nivel por primera vez.\n");
-            raw.doubleIndirectT = freeMap->Find();
+            //DEBUG('y', "Alocamos la tabla de segundo nivel por primera vez:\n");
+            //DEBUG('y', "oldNumInTables=%u, numInTables=%u, oldNumDoubleIndSect=%u, numDoubleIndSect=%u.\n", oldNumInTables, numInTables, oldNumDoubleIndSect, numDoubleIndSect);
+
+            raw.doubleIndirectH = freeMap->Find();
+        }
+        else {
+            ((FileHeader*)doubleIH)->FetchFrom(raw.doubleIndirectH);
         }
 
         // si la cantidad de tablas es la misma, como el número de sectores
         // es mayor, sólo habría que alocar más sectores de la última tabla        
         if (oldNumInTables == numInTables) {
-            // DEBUG('f', "Alocamos más sectores a la última tabla, oldNumInTables=%u, numInTables=%u, oldNumDoubleIndSect=%u, numDoubleIndSect=%u.\n", oldNumInTables, numInTables, oldNumDoubleIndSect, numDoubleIndSect);
+            //DEBUG('y', "Alocamos más sectores a la última tabla, oldNumInTables=%u, numInTables=%u, oldNumDoubleIndSect=%u, numDoubleIndSect=%u.\n", oldNumInTables, numInTables, oldNumDoubleIndSect, numDoubleIndSect);
             ASSERT(k != 0);
             //DEBUG('f', "k = %u\n", k);
-            for (unsigned i = k; i < numDoubleIndSect - oldNumDoubleIndSect + 1; i++)
-                simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find();
+            IndirectHeader *internDoubleIH = new IndirectHeader;
+            ((FileHeader*)internDoubleIH)->FetchFrom(doubleIH->dataSectors[numInTables - 1]);
+            for (unsigned i = k; i < numDoubleIndSect - oldNumDoubleIndSect + k; i++)
+                internDoubleIH->dataSectors[i] = freeMap->Find();
+            ((FileHeader*)internDoubleIH)->WriteBack(doubleIH->dataSectors[numInTables - 1]);
         }
         
         if (oldNumInTables < numInTables) {
             if (k != 0) {
-                // DEBUG('f', "Alocamos los sectores restantes de la última tabla.\n");
+                //DEBUG('y', "Alocamos los sectores restantes de la última tabla.\n");
                 // alocamos los sectores restantes de la última tabla
+                IndirectHeader *internDoubleIH = new IndirectHeader;
+                ((FileHeader*)internDoubleIH)->FetchFrom(doubleIH->dataSectors[oldNumInTables - 1]);
                 for (unsigned i = k; i < NUM_INDIRECT; i++)
-                    simpleDoublesT[oldNumInTables - 1].dataSectors[i] = freeMap->Find();
+                    internDoubleIH->dataSectors[i] = freeMap->Find();
+                    // aca necesito
+                ((FileHeader*)internDoubleIH)->WriteBack(doubleIH->dataSectors[numInTables - 1]);
+                delete internDoubleIH;
             }
 
             for (unsigned i = oldNumInTables; i < numInTables - 1; i++) {
-                // DEBUG('f', "Alocamos las tablas.\n");
-                doubleT.dataSectors[i] = freeMap->Find();
+                //DEBUG('y', "Alocamos las tablas.\n");
+                IndirectHeader *internDoubleIH = new IndirectHeader;
+                doubleIH->dataSectors[i] = freeMap->Find();
                 for (unsigned j = 0; j < NUM_INDIRECT; j++)
-                    simpleDoublesT[i].dataSectors[j] = freeMap->Find();
+                    internDoubleIH->dataSectors[j] = freeMap->Find();
+                ((FileHeader*)internDoubleIH)->WriteBack(doubleIH->dataSectors[i]);
+                delete internDoubleIH;
             }
 
-            doubleT.dataSectors[numInTables - 1] = freeMap->Find();
+            IndirectHeader *internDoubleIH = new IndirectHeader;
+            doubleIH->dataSectors[numInTables - 1] = freeMap->Find();
             unsigned j = numDoubleIndSect % NUM_INDIRECT;
             for (unsigned i = 0; i < j; i++)
-                simpleDoublesT[numInTables - 1].dataSectors[i] = freeMap->Find(); 
+                internDoubleIH->dataSectors[i] = freeMap->Find(); 
+            ((FileHeader*)internDoubleIH)->WriteBack(doubleIH->dataSectors[numInTables - 1]);
+            delete internDoubleIH;
         }
+        ((FileHeader*)doubleIH)->WriteBack(raw.doubleIndirectH);
 
     }
 

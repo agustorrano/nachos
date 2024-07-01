@@ -67,9 +67,6 @@ public:
 
 private:
     RawFileHeader raw;
-    IndirectT simpleT;
-    IndirectT doubleT;
-    IndirectT simpleDoublesT [NUM_INDIRECT];
 };
 
 
