@@ -122,7 +122,7 @@ public:
     ~FileSystem();
 
     /// Create a file (UNIX `creat`).
-    bool Create(const char *name, unsigned initialSize);
+    bool Create(const char *name, unsigned initialSize, bool isDir);
 
     /// Open a file (UNIX `open`).
     OpenFile *Open(const char *name);

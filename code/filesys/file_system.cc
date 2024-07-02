@@ -150,6 +150,26 @@ FileSystem::~FileSystem()
     delete lockDirectory;
 }
 
+int 
+ParseDir(const char* string, char* outName, char* outDir[10]) 
+{
+    char *delim = "/";
+    int ntok = 0;
+    char *saveptr;
+    char *cpString = new char[strlen(string) + 1];
+    strcpy(cpString, string);
+    char *first = strtok_r(cpString, delim, &saveptr);
+    outDir[ntok] = first;
+    for (char *token = strtok_r(NULL, delim, &saveptr); token != NULL; token = strtok_r(NULL, delim, &saveptr))
+    {
+      ntok++;
+      outDir[ntok] = token;
+    }    
+    strcpy(outName, outDir[ntok]);
+    outDir[ntok] = NULL;
+    return ntok;
+}
+
 /// Create a file in the Nachos file system (similar to UNIX `create`).
 /// Since we cannot increase the size of files dynamically, we have to give
 /// `Create` the initial size of the file.
@@ -176,7 +196,7 @@ FileSystem::~FileSystem()
 /// * `name` is the name of file to be created.
 /// * `initialSize` is the size of file to be created.
 bool
-FileSystem::Create(const char *name, unsigned initialSize)
+FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
 {
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
@@ -186,12 +206,42 @@ FileSystem::Create(const char *name, unsigned initialSize)
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile);
+    
+    // length es la cantidad de directorios que hay incluyendo el
+    // archivo ("/userland/shell.cc == 2")
+    unsigned length = 0;
+    while (*name)
+        length += *name == '/';
+    
+    char *fileName, **outDir = new char*[length - 1];
+
+    int ntok = ParseDir(name, fileName, outDir);
+    int sector;
+
+    // change directory
+    // No esta bien pero es la idea
+    for (unsigned i = 0; i < length - 1; i++) {
+        sector = dir->Find(outDir[i]);
+
+        if (sector == -1) {
+            DEBUG('f', "Directory %s was not found.\n", outDir[i]);
+            // liberamos lo que haya que liberara
+            return false;
+        }
+
+        OpenFile *dirFile = new OpenFile(sector);
+        dir->FetchFrom(dirFile);
+    }
 
     bool success;
 
-    if (dir->Find(name) != -1) {
-        DEBUG('f', "File %s is already in directory.\n", name);
-        success = false;  // File is already in directory.
+    // if (dir->Find(name) != -1) {
+    //     DEBUG('f', "File %s is already in directory.\n", name);
+    //     success = false;  // File is already in directory.
+    // buscamos el archivo en el directorio
+    if (dir->Find(fileName) != -1) {
+        DEBUG('f', "File %s is already in directory.\n", fileName);
+        success = false; 
     } else {
         Bitmap *freeMap = new Bitmap(NUM_SECTORS);
         lockBitmap->Acquire();
@@ -202,19 +252,28 @@ FileSystem::Create(const char *name, unsigned initialSize)
         if (sector == -1) {
             DEBUG('f', "No free block for file header.\n");
             success = false;  // No free block for file header.
+        // Hay que cambiar la función Add para que me pueda argegar un
+        // directorio
         } else if (!dir->Add(name, sector)) {
             DEBUG('f', "No space in directory for file %s.\n", name);
             success = false;  // No space in directory.
         } else {
             FileHeader *h = new FileHeader;
             success = h->Allocate(freeMap, initialSize);
-              // Fails if no space on disk for data.
+            // Fails if no space on disk for data.
             if (success) {
                 // Everything worked, flush all changes back to disk.
                 DEBUG('f', "Successful creation of file %s.\n", name);
                 h->WriteBack(sector);
                 dir->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
+                
+                // Creamos el nuevo directorio
+                // if (isDir) {
+                //     Directory *newDir = new Directory(NUM_DIR_ENTRIES);
+                //     OpenFile *newDirFile = new OpenFile(sector);
+                //     newDir->FetchFrom(newDirFile);
+                // }
             }
             delete h;
         }
