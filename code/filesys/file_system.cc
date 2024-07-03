@@ -231,10 +231,12 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     
     // length es la cantidad de directorios que hay ("userland/shell.cc == 1")
     unsigned length = 0;
-    while (*name) {
-        length += *name == '/';
-        name++;
+    /* char *copyName = new char[strlen(name) + 1];
+    strcpy(copyName, name); */
+    for (int i = 0; *(name+i) != 0; i++) {
+        length += *(name+i) == '/';
     }
+    // delete copyName;
 
     char fileName[FILE_NAME_MAX_LEN + 1];
     OpenFile *dirFile;
