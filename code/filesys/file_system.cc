@@ -151,14 +151,12 @@ FileSystem::~FileSystem()
 }
 
 void
-ParseDir(const char* string, char outName[10], char* outDir[10]) 
+ParseDir(char* buffer, char outName[10], char* outDir[10]) 
 {
-    char* stringCopy = new char [strlen(string)];
-    strcpy(stringCopy, string);
     const char *delim = "/";
     int ntok = 0;
     char *saveptr;
-    char *first = strtok_r(stringCopy, delim, &saveptr);
+    char *first = strtok_r(buffer, delim, &saveptr);
     outDir[ntok] = first;
     for (char *token = strtok_r(NULL, delim, &saveptr); token != NULL; token = strtok_r(NULL, delim, &saveptr))
     {
@@ -167,7 +165,6 @@ ParseDir(const char* string, char outName[10], char* outDir[10])
     }    
     strcpy(outName, outDir[ntok]);
     outDir[ntok] = NULL;
-    delete stringCopy;
     return;
 }
 
@@ -240,21 +237,24 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     }
 
     //char fileName[FILE_NAME_MAX_LEN + 1];
-    char *fileName = new char [FILE_NAME_MAX_LEN + 1];
+    char fileName[FILE_NAME_MAX_LEN + 1];
     OpenFile *dirFile;
 
     if (length != 0) {
         char *outDir[10] = {NULL};
-        ParseDir(name, fileName, outDir);
+        char* buffer = new char [strlen(name)];
+        strcpy(buffer, name);
+        ParseDir(buffer, fileName, outDir);
 
         // change directory
         dirFile = ChangeDirectory(dir, length, outDir);
         if (dirFile == nullptr) {
             lockDirectory->Release();
             delete dir;
-            //delete outDir;
+            delete buffer;
             return false;
         }
+        delete buffer;
     } else {
         strcpy(fileName, name);
     }

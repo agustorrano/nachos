@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int parseDir(char* string, char* outName, char* outDir[10]) {
+int parseDir(char* string, char outName[10], char* outDir[10]) {
     const char *delim = "/";
     int ntok = 0;
     char *saveptr;
@@ -19,8 +19,8 @@ int parseDir(char* string, char* outName, char* outDir[10]) {
 }
 
 int main() {
-    char ruta[] = "./file";
-    const char* nombre = "";
+    char ruta[] = "./home/file";
+    char nombre[10];
     char *directorios[10] = {NULL};
 
     int cantDir = parseDir(ruta, nombre, directorios);
