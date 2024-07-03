@@ -3,7 +3,7 @@
 
 
 int parseDir(char* string, char* outName, char* outDir[10]) {
-    char *delim = "/";
+    const char *delim = "/";
     int ntok = 0;
     char *saveptr;
     char *first = strtok_r(string, delim, &saveptr);
@@ -20,7 +20,7 @@ int parseDir(char* string, char* outName, char* outDir[10]) {
 
 int main() {
     char ruta[] = "./file";
-    char nombre[10];
+    const char* nombre = "";
     char *directorios[10] = {NULL};
 
     int cantDir = parseDir(ruta, nombre, directorios);
