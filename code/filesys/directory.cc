@@ -114,7 +114,7 @@ Directory::Find(const char *name)
 /// * `name` is the name of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *name, int newSector)
+Directory::Add(const char *name, int newSector, bool isDir)
 {
     ASSERT(name != nullptr);
 
@@ -124,13 +124,28 @@ Directory::Add(const char *name, int newSector)
 
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if (!raw.table[i].inUse) {
+            raw.table[i].isDir = isDir;
             raw.table[i].inUse = true;
             strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
             raw.table[i].sector = newSector;
             return true;
         }
     }
-    return false;  // no space.  Fix when we have extensible files.
+
+    raw.tableSize++;
+    DirectoryEntry *newTable = new DirectoryEntry [raw.tableSize];
+    for (unsigned i = 0; i < raw.tableSize - 1; i++) {
+        newTable[i].isDir = raw.table[i].isDir;
+        newTable[i].inUse = true;
+        strncpy(newTable[i].name, raw.table[i].name, FILE_NAME_MAX_LEN);
+        newTable[i].sector = raw.table[i].sector;
+    }
+    newTable[raw.tableSize - 1].isDir = isDir;
+    newTable[raw.tableSize - 1].inUse = true;
+    strncpy(newTable[raw.tableSize - 1].name, name, FILE_NAME_MAX_LEN);
+    newTable[raw.tableSize - 1].sector = newSector;
+
+    return true;  // no space.  Fix when we have extensible files.
 }
 
 /// Remove a file name from the directory.   Return true if successful;
@@ -187,4 +202,15 @@ const RawDirectory *
 Directory::GetRaw() const
 {
     return &raw;
+}
+
+bool 
+Directory::IsDirectory(unsigned sector)
+{
+    for (unsigned i = 0; i < raw.tableSize; i++) {
+        if (raw.table[i].sector == sector)
+            return raw.table[i].isDir;
+    }
+    ASSERT(false);
+    return false;
 }

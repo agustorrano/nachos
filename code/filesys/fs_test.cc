@@ -53,7 +53,7 @@ Copy(const char *from, const char *to)
           from, fileLength, to);
 
     // Create a Nachos file of the same length.
-    if (!fileSystem->Create(to, fileLength)) {  // Create Nachos file.
+    if (!fileSystem->Create(to, fileLength, false)) {  // Create Nachos file.
         printf("Copy: could not create output file %s\n", to);
         fclose(fp);
         return;
@@ -122,10 +122,12 @@ FileWrite()
     printf("Sequential write of %u byte file, in %u byte chunks\n",
            FILE_SIZE, CONTENT_SIZE);
 
-    if (!fileSystem->Create(FILE_NAME, 0)) {
+    if (!fileSystem->Create(FILE_NAME, 0, false)) {
         fprintf(stderr, "Perf test: cannot create %s\n", FILE_NAME);
         return;
     }
+
+    fileSystem->Print();
 
     OpenFile *openFile = fileSystem->Open(FILE_NAME);
     if (openFile == nullptr) {

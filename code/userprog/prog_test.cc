@@ -38,8 +38,7 @@ StartProcess(const char *filename)
     sprintf(space->swapName, "SWAP.%d", pid);
     unsigned numPages = space->GetNumPages();
     unsigned initialSize = numPages * PAGE_SIZE;
-    //unsigned initialSize = 30 * PAGE_SIZE;
-    fileSystem->Create(space->swapName, initialSize);
+    fileSystem->Create(space->swapName, initialSize, false);
     OpenFile* swapFile = fileSystem->Open(space->swapName);
     if (swapFile == nullptr) {
         printf("Unable to open file %s\n", space->swapName);

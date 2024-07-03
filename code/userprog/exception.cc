@@ -129,7 +129,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
-            if (!fileSystem->Create(filename, SIZE_MAX_FILE)) {
+            if (!fileSystem->Create(filename, SIZE_MAX_FILE, false)) {
                 DEBUG('e', "Error: could not create file.\n");
                 machine->WriteRegister(2, -1);
             }

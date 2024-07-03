@@ -58,7 +58,7 @@ public:
 
     ~FileSystem() {}
 
-    bool Create(const char *name, unsigned initialSize)
+    bool Create(const char *name, unsigned initialSize, bool isDir)
     {
         ASSERT(name != nullptr);
 
