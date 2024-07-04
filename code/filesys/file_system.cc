@@ -158,13 +158,13 @@ ParseDir(char* buffer, char outName[10], char* outDir[10])
     char *saveptr;
     char *first = strtok_r(buffer, delim, &saveptr);
     outDir[ntok] = first;
-    for (char *token = strtok_r(NULL, delim, &saveptr); token != NULL; token = strtok_r(NULL, delim, &saveptr))
+    for (char *token = strtok_r(nullptr, delim, &saveptr); token != nullptr; token = strtok_r(nullptr, delim, &saveptr))
     {
       ntok++;
       outDir[ntok] = token;
     }    
     strcpy(outName, outDir[ntok]);
-    outDir[ntok] = NULL;
+    outDir[ntok] = nullptr;
     return;
 }
 
@@ -223,7 +223,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
 
-    DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
+    DEBUG('f', "Creating file %s, size %u.\n", name, initialSize);
 
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     lockDirectory->Acquire();
@@ -236,7 +236,6 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
         length += *(name+i) == '/';
     }
 
-    //char fileName[FILE_NAME_MAX_LEN + 1];
     char fileName[FILE_NAME_MAX_LEN + 1];
     OpenFile *dirFile;
 
@@ -252,6 +251,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
             lockDirectory->Release();
             delete dir;
             delete buffer;
+            delete dirFile;
             return false;
         }
         delete buffer;
@@ -288,8 +288,10 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
                 h->WriteBack(sector);
                 if (length == 0)
                     dir->WriteBack(directoryFile);
-                else
+                else {
                     dir->WriteBack(dirFile);
+                    delete dirFile;
+                }
                 freeMap->WriteBack(freeMapFile);
             }
             delete h;
@@ -316,18 +318,52 @@ FileSystem::Open(const char *name)
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     OpenFile  *openFile = nullptr;
 
-    DEBUG('f', "Opening file %s\n", name);
+    DEBUG('f', "Opening file %s.\n", name);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile);
-    int sector = dir->Find(name);
-    lockDirectory->Release();
-    if (sector >= 0 && openfiles->OpenFileAdd(sector, (char*)name)) {
+
+    unsigned length = 0;
+    
+    for (int i = 0; *(name+i) != 0; i++) {
+        length += *(name+i) == '/';
+    }
+
+    char fileName[FILE_NAME_MAX_LEN + 1];
+    OpenFile *dirFile;
+
+    if (length != 0) {
+        char *outDir[10] = {NULL};
+        char* buffer = new char [strlen(name)];
+        strcpy(buffer, name);
+        ParseDir(buffer, fileName, outDir);
+
+        // change directory
+        dirFile = ChangeDirectory(dir, length, outDir);
+        if (dirFile == nullptr) {
+            lockDirectory->Release();
+            delete dir;
+            delete buffer;
+            delete dirFile;
+            return nullptr;
+        }
+        delete buffer;
+    } else {
+        strcpy(fileName, name);
+    }
+
+    int sector = dir->Find(fileName);
+
+    if (dir->IsDirectory(sector))
+        DEBUG('f', "Trying to open directory %s.\n", fileName);
+
+    else if (sector >= 0 && openfiles->OpenFileAdd(sector, (char*)name)) {
         DEBUG('f', "We add the file to the table for the first time.\n");
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
+    lockDirectory->Release();
     delete dir;
     if (openFile != nullptr)
-        DEBUG('f', "Saccessful opening file %s.\n", name);
+        DEBUG('f', "Successful opening file %s.\n", name);
     return openFile;  // Return null if not found.
 }
 
@@ -346,22 +382,77 @@ FileSystem::Open(const char *name)
 bool
 FileSystem::Remove(const char *name)
 {
-    DEBUG('f', "Removing file %s\n", name);
+    DEBUG('f', "Removing file %s.\n", name);
     ASSERT(name != nullptr);
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile);
-    int sector = dir->Find(name);
+
+    unsigned length = 0;
+    
+    for (int i = 0; *(name+i) != 0; i++) {
+        length += *(name+i) == '/';
+    }
+
+    char fileName[FILE_NAME_MAX_LEN + 1];
+    OpenFile *dirFile;
+
+    if (length != 0) {
+        char *outDir[10] = {NULL};
+        char* buffer = new char [strlen(name)];
+        strcpy(buffer, name);
+        ParseDir(buffer, fileName, outDir);
+
+        // change directory
+        dirFile = ChangeDirectory(dir, length, outDir);
+        if (dirFile == nullptr) {
+            lockDirectory->Release();
+            delete dir;
+            delete buffer;
+            delete dirFile;
+            return false;
+        }
+        delete buffer;
+    } else {
+        strcpy(fileName, name);
+    }
+
+    int sector = dir->Find(fileName);
     if (sector == -1) {
         DEBUG('f', "Unable to remove because file %s was not found.\n", name);
         lockDirectory->Release();
         delete dir;
         return false;  // file not found
     }
+
+    // antes de eliminar un directorio tendría que verificar que está
+    // vacío o borro todo lo que tiene??
+    if (dir->IsDirectory(sector)) {
+        Directory *dirToDelete = new Directory(NUM_DIR_ENTRIES);
+        dirToDelete->FetchFrom(dirFile);
+        
+        const RawDirectory *raw = dirToDelete->GetRaw();
+        for (unsigned i = 0; i < raw->tableSize; i++) {
+            if (raw->table[i].inUse) {
+                DEBUG('f', "Directory is not empty.\n");
+                delete dirToDelete;
+                delete dirFile;
+                return false;
+            }
+        }
+        delete dirToDelete;
+        Release(sector);
+        return true;
+    }
     
     // siempre se borra del directorio
-    dir->Remove(name);
-    dir->WriteBack(directoryFile);    // Flush to disk.
+    dir->Remove(fileName);
+    if (length == 0)
+        dir->WriteBack(directoryFile);    // Flush to disk.
+    else {
+        dir->WriteBack(dirFile);
+        delete dirFile;
+    }
 
     if (openfiles->IsOpen(sector))
         openfiles->MarkToDelete(sector); // marcamos que deberá borrarse del disco
