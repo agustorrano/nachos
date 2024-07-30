@@ -183,7 +183,7 @@ main(int argc, char **argv)
         } else if (!strcmp(*argv, "-mkdir")) {
             ASSERT(argc > 1);
             DEBUG('f', "Create new directory: [%s].\n", *(argv + 1));
-            fileSystem->Create(*(argv + 1), 0, 1);
+            fileSystem->Create(*(argv + 1), DIRECTORY_FILE_SIZE, 1);
         }
 #endif
     }

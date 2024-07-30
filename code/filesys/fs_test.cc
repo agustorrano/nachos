@@ -58,7 +58,6 @@ Copy(const char *from, const char *to)
         fclose(fp);
         return;
     }
-    fileSystem->Print();
     OpenFile *openFile = fileSystem->Open(to);
     ASSERT(openFile != nullptr);
 
