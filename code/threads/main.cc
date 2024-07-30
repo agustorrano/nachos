@@ -178,6 +178,12 @@ main(int argc, char **argv)
             printf("Filesystem check %s.\n", result ? "succeeded" : "failed");
         } else if (!strcmp(*argv, "-tf")) {  // Performance test.
             PerformanceTest();
+        } else if (!strcmp(*argv, "-cd")) {
+            DEBUG('f', "Changing directory.\n");
+        } else if (!strcmp(*argv, "-mkdir")) {
+            ASSERT(argc > 1);
+            DEBUG('f', "Create new directory: [%s].\n", *(argv + 1));
+            fileSystem->Create(*(argv + 1), 0, 1);
         }
 #endif
     }

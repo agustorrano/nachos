@@ -183,7 +183,11 @@ ChangeDirectory(Directory *dir, unsigned length, char **outDir)
 
         if (dir->IsDirectory(sector)) {
             dirFile = new OpenFile(sector);
+            printf("in change directory\n");
+            dir->Print();
             dir->FetchFrom(dirFile);
+            printf("in change directory\n");
+            dir->Print();
         } else {
             DEBUG('f', "%s is not a directory.\n", outDir[i]);
             return nullptr;
@@ -275,7 +279,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
         if (sector == -1) {
             DEBUG('f', "No free block for file header.\n");
             success = false;  // No free block for file header.
-        } else if (!dir->Add(name, sector, isDir)) {
+        } else if (!dir->Add(fileName, sector, isDir)) {
             DEBUG('f', "No space in directory for file %s.\n", name);
             success = false;  // No space in directory.
         } else {
