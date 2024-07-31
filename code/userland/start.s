@@ -141,6 +141,15 @@ Close:
         j       $31
         .end    Close
 
+        .globl  Ls
+        .ent    Ls
+Ls:
+        addiu   $2, $0, SC_LS
+        syscall
+        j       $31
+        .end    Ls
+
+
 /// Dummy function to keep gcc happy.
         .globl  __main
         .ent    __main

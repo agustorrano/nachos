@@ -105,6 +105,17 @@ SyscallHandler(ExceptionType _et)
     int scid = machine->ReadRegister(2);
 
     switch (scid) {
+        case SC_LS: {
+            #ifndef FILESYS_STUB
+            DEBUG('e', "Listing current directory, initiated by user program.\n");
+                fileSystem->List();
+                machine->WriteRegister(2,0);
+            #else 
+            DEBUG('e', "Must use NachOS File System.\n");
+                machine->WriteRegister(2,-1);
+            #endif 
+            break;
+        }
 
         case SC_HALT: {
             DEBUG('e', "Shutdown, initiated by user program.\n");
