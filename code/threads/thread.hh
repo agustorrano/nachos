@@ -149,8 +149,6 @@ public:
 
     void RestorePriority();
 
-    int pid;
-
 private:
     // Some of the private data for this class is listed above.
 
@@ -196,6 +194,8 @@ public:
 
     // User code this thread is running.
     AddressSpace *space;
+
+    int pid;
 
     int AddOpenFile(OpenFile* item);
 

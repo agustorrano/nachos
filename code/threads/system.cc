@@ -171,6 +171,7 @@ Initialize(int argc, char **argv)
             numPhysicalPages = atoi(*(argv + 1));
             argCount = 2;
         }
+        threadsTable = new Table<Thread*>;
 #endif
 #ifdef FILESYS_NEEDED
         if (!strcmp(*argv, "-f")) {
@@ -207,7 +208,6 @@ Initialize(int argc, char **argv)
 
     synchConsole = new SynchConsole(nullptr, nullptr);
 
-    threadsTable = new Table<Thread*>;
     //threadsTable->Add(currentThread);
 
 #ifdef USE_SWAP

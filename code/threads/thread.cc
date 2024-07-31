@@ -58,6 +58,7 @@ Thread::Thread(const char *threadName, int join)
     openfiles = new Table<OpenFile*>;
     this->AddOpenFile(nullptr); // fd 0 used for stdin in console
     this->AddOpenFile(nullptr); // fd 1 used for stdout in console
+    pid = threadsTable->Add(this);
 #endif
 }
 
@@ -79,6 +80,7 @@ Thread::Thread(const char *threadName, int join, const unsigned int threadPriori
     openfiles = new Table<OpenFile*>;
     this->AddOpenFile(nullptr); // fd 0 used for stdin in console
     this->AddOpenFile(nullptr); // fd 1 used for stdout in console
+    pid = threadsTable->Add(this);
 #endif
 }
 
@@ -112,6 +114,7 @@ Thread::~Thread()
         }
     }
     delete openfiles;
+    threadsTable->Remove(pid);
 #endif
 }
 
@@ -261,7 +264,7 @@ Thread::Finish()
     
     threadToBeDestroyed = currentThread;
     #ifdef USER_PROGRAM
-    if (threadsTable->IsEmpty()) 
+    if (threadsTable->Count() == 1) 
         interrupt->Halt();    
     #endif
     Sleep();  // Invokes `SWITCH`.
@@ -281,7 +284,7 @@ Thread::Finish(int st)
     
     threadToBeDestroyed = currentThread;
     #ifdef USER_PROGRAM
-    if (threadsTable->IsEmpty()) 
+    if (threadsTable->Count() == 1) 
         interrupt->Halt();    
     #endif
     Sleep();  // Invokes `SWITCH`.

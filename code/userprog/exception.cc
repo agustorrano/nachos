@@ -328,7 +328,7 @@ SyscallHandler(ExceptionType _et)
             }
 
             DEBUG('e', "`Join` requested with pid %d.\n", sid);
-            Thread* t = threadsTable->Remove(sid);
+            Thread* t = threadsTable->Get(sid);
             int st;
             t->Join(&st);
             machine->WriteRegister(2, st);
@@ -371,7 +371,8 @@ SyscallHandler(ExceptionType _et)
             delete executable;
             #endif 
 
-            SpaceId sid = threadsTable->Add(newProc);
+            // SpaceId sid = threadsTable->Add(newProc);
+            SpaceId sid = newProc->pid;
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
                 delete space;
@@ -425,8 +426,9 @@ SyscallHandler(ExceptionType _et)
             delete executable;
             #endif 
             
-            SpaceId sid = threadsTable->Add(newProc);
-            newProc->pid = sid;
+            // SpaceId sid = threadsTable->Add(newProc);
+            // newProc->pid = sid;
+            SpaceId sid = newProc->pid;
             if (sid == -1) {
                 DEBUG('e', "Error: too many processes.\n");
                 delete space;
