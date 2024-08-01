@@ -37,6 +37,7 @@ WriteError(const char *description, OpenFileId output)
     Write(SUFFIX, sizeof SUFFIX - 1, output);
 }
 
+// Lee una línea de la entrada estándar y la almacena en buffer.
 static unsigned
 ReadLine(char *buffer, unsigned size, OpenFileId input)
 {
@@ -55,6 +56,8 @@ ReadLine(char *buffer, unsigned size, OpenFileId input)
     return i;
 }
 
+// Divide la línea de comando en argumentos separados por espacios, 
+// reemplazando los espacios con caracteres nulos (\0)
 static int
 PrepareArguments(char *line, char **argv, unsigned argvSize)
 {
@@ -106,13 +109,13 @@ main(void)
     char            *argv[MAX_ARG_COUNT];
 
     for (;;) {
-        WritePrompt(OUTPUT);
-        const unsigned lineSize = ReadLine(line, MAX_LINE_SIZE, INPUT);
+        WritePrompt(OUTPUT); // escribe --->
+        const unsigned lineSize = ReadLine(line, MAX_LINE_SIZE, INPUT); // lee por consola
         if (lineSize == 0) {
             continue;
         }
 
-        if (PrepareArguments(line, argv, MAX_ARG_COUNT) == 0) {
+        if (PrepareArguments(line, argv, MAX_ARG_COUNT) == 0) { // parsea el pedido
             WriteError("too many arguments.", OUTPUT);
             continue;
         }
@@ -123,8 +126,11 @@ main(void)
         if (line[0] == '&')
             newProc = Exec2(&line[1], argv, 0);
         else {
-            newProc = Exec2(line, argv, 1);
-            Join(newProc);
+            if (!strcmpp(line, "cd")) Cd(argv[1]);
+            else {
+                newProc = Exec2(line, argv, 1);
+                Join(newProc);
+            }
         }
         // const SpaceId newProc = Exec2(line, argv, 1);
         // const SpaceId newProc = Exec(line, 1);

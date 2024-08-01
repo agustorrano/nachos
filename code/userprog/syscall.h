@@ -128,7 +128,7 @@ int Close(OpenFileId id);
 
 void Ls();
 
-void Cd();
+void Cd(char *newDir);
 
 #endif
 

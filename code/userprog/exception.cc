@@ -124,7 +124,38 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_CD: {
-            // completar
+            #ifdef FILESYS
+            DEBUG('e', "CD, initiated by user program.\n");
+            int newDirAddr = machine->ReadRegister(4);
+            if (newDirAddr == 0) {
+                DEBUG('e', "Now in root directory.\n");
+                
+                currentThread->numDirectories = 0; // queda en el raiz
+                // directories va a quedar lleno con basura
+
+                machine->WriteRegister(2, 0);
+                break;
+            }
+            char newDir[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(newDirAddr,
+                                    newDir, sizeof newDir)) {
+                DEBUG('e', "Error: directory string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            if (!strcmp(newDir, ".")) // queda en el mismo directorio 
+                DEBUG('e', "Did not change directory.\n");
+            else if(!strcmp(newDir, "..")) { // vuelve al directorio padre
+                DEBUG('e', "Now in father directory.\n");
+                currentThread->numDirectories--;
+            }
+            else { // es el nombre de un directorio. completar
+                DEBUG('e', "Now in directory %s.\n", newDir);
+            }
+            machine->WriteRegister(2, 0);
+            #endif
+            break;
         }
 
         case SC_HALT: {

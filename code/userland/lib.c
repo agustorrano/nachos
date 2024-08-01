@@ -7,6 +7,19 @@ unsigned strlenn (const char *s)
   return i;
 }
 
+int strcmpp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+
+    if (*s1 == '\0' && *s2 == '\0') {
+        return 0;  // Cadenas iguales
+    } else {
+        return -1; // Cadenas distintas
+    }
+}
+
 void putss (const char *s)
 {
   Write(s, strlenn(s), CONSOLE_OUTPUT);
