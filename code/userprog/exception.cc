@@ -150,8 +150,22 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Now in father directory.\n");
                 currentThread->numDirectories--;
             }
-            else { // es el nombre de un directorio. completar
-                DEBUG('e', "Now in directory %s.\n", newDir);
+            else { // es el nombre de un directorio. 
+                Directory* dir = new Directory(NUM_DIR_ENTRIES);
+                int actualDir = currentThread->directories[numDirectories];
+                OpenFile* fileDir = new OpenFile(actualDir);
+                dir->FetchFrom(fileDir);
+                // habria que hacer esto en un for, habiendo ya parseado el newDir
+                int x = dir->Find(newDir);
+                if (x == -1) {// no es una dir entry
+                    DEBUG('e', "[%s] is not a sub directory.\n", newDir);
+                }
+                else { // es una dir entry
+                    // falta verificar que sea un directorio y no un archivo
+                    DEBUG('e', "Now in directory %s.\n", newDir);
+                }
+                delete dir;
+                delete fileDir;
             }
             machine->WriteRegister(2, 0);
             #endif
