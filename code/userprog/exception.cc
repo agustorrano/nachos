@@ -109,12 +109,21 @@ SyscallHandler(ExceptionType _et)
             #ifndef FILESYS_STUB
             DEBUG('e', "Listing current directory, initiated by user program.\n");
                 fileSystem->List();
+            /*  int sector = currentThread->directories[currentThread->numDirectories];
+                OpenFile* currentDir = new OpenFile(sector);
+                Directory *dir = new Directory(NUM_DIR_ENTRIES);
+                dir->FetchFrom(currentDir); 
+                dir->List(); */
                 machine->WriteRegister(2,0);
             #else 
             DEBUG('e', "Must use NachOS File System.\n");
                 machine->WriteRegister(2,-1);
             #endif 
             break;
+        }
+
+        case SC_CD: {
+            // completar
         }
 
         case SC_HALT: {

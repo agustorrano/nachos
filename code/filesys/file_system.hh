@@ -49,6 +49,7 @@
 static const unsigned FREE_MAP_FILE_SIZE = 0;
 static const unsigned NUM_DIR_ENTRIES = 0;
 static const unsigned DIRECTORY_FILE_SIZE = 0;
+static const unsigned NUM_MAX_SUBDIRECTORIES = 0;
 
 
 class FileSystem {
@@ -108,6 +109,7 @@ static const unsigned NUM_DIR_ENTRIES = 10;
 static const unsigned DIRECTORY_FILE_SIZE
   = sizeof (DirectoryEntry) * NUM_DIR_ENTRIES;
 
+static const unsigned NUM_MAX_SUBDIRECTORIES = 5;
 
 class FileSystem {
 public:

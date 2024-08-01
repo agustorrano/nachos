@@ -205,6 +205,11 @@ public:
 
     OpenFile* RemoveOpenFile(int fd);
 #endif
+
+#ifdef FILESYS
+    int directories[NUM_MAX_SUBDIRECTORIES];
+    int numDirectories;
+#endif 
 };
 
 /// Magical machine-dependent routines, defined in `switch.s`.

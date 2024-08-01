@@ -33,6 +33,7 @@
 #define SC_WRITE   15
 #define SC_EXEC2   16
 #define SC_LS      17
+#define SC_CD      18
 
 #ifndef IN_ASM
 
@@ -126,6 +127,8 @@ int Read(char *buffer, int size, OpenFileId id);
 int Close(OpenFileId id);
 
 void Ls();
+
+void Cd();
 
 #endif
 

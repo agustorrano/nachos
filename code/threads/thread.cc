@@ -30,6 +30,7 @@
 /// overflows.
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
 
+// static const unsigned DIRECTORY_SECTOR = 1;
 
 static inline bool
 IsThreadStatus(ThreadStatus s)
@@ -60,6 +61,10 @@ Thread::Thread(const char *threadName, int join)
     this->AddOpenFile(nullptr); // fd 1 used for stdout in console
     pid = threadsTable->Add(this);
 #endif
+#ifdef FILESYS
+    directories[0] = DIRECTORY_SECTOR; // SECTOR 1
+    numDirectories = 0;
+#endif
 }
 
 Thread::Thread(const char *threadName, int join, const unsigned int threadPriority)
@@ -81,6 +86,10 @@ Thread::Thread(const char *threadName, int join, const unsigned int threadPriori
     this->AddOpenFile(nullptr); // fd 0 used for stdin in console
     this->AddOpenFile(nullptr); // fd 1 used for stdout in console
     pid = threadsTable->Add(this);
+#endif
+#ifdef FILESYS
+    directories[0] = DIRECTORY_SECTOR; // SECTOR 1
+    numDirectories = 0;
 #endif
 }
 
