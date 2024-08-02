@@ -107,15 +107,16 @@ SyscallHandler(ExceptionType _et)
 
     switch (scid) {
         case SC_LS: {
-            #ifndef FILESYS_STUB
+            #ifdef FILESYS
             DEBUG('e', "Listing current directory, initiated by user program.\n");
-                //fileSystem->List();
-                int sector = currentThread->directories[currentThread->numDirectories];
-                OpenFile* currentDir = new OpenFile(sector);
-                Directory *dir = new Directory(NUM_DIR_ENTRIES);
-                dir->FetchFrom(currentDir); 
-                dir->List();
-                machine->WriteRegister(2,0);
+            int sector = currentThread->directories[currentThread->numDirectories];
+            OpenFile* currentDirfile = new OpenFile(sector);
+            Directory *dir = new Directory(NUM_DIR_ENTRIES);
+            dir->FetchFrom(currentDirfile); 
+            dir->List();
+            machine->WriteRegister(2,0);
+            delete currentDirfile;
+            delete dir;
             #else 
             DEBUG('e', "Must use NachOS File System.\n");
                 machine->WriteRegister(2,-1);
@@ -126,12 +127,14 @@ SyscallHandler(ExceptionType _et)
         case SC_CD: {
             #ifdef FILESYS
             DEBUG('e', "CD, initiated by user program.\n");
+
             int newDirAddr = machine->ReadRegister(4);
             if (newDirAddr == 0) {
-                DEBUG('e', "Now in root directory.\n");
                 
-                currentThread->numDirectories = 0; // queda en el raiz
-                // directories va a quedar lleno con basura
+                const char* buffer = "Now in root directory.\n";
+                synchConsole->WriteBuffer((char*)buffer, 24);
+                
+                currentThread->numDirectories = 0; // queda en el raiz, directories va a quedar lleno con basura
 
                 machine->WriteRegister(2, 0);
                 break;
@@ -144,32 +147,41 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            if (!strcmp(newDir, ".")) // queda en el mismo directorio 
-                DEBUG('e', "Did not change directory.\n");
-            else if(!strcmp(newDir, "..")) { // vuelve al directorio padre
-                DEBUG('e', "Now in father directory.\n");
+            if (!strcmp(newDir, ".")) {// queda en el mismo directorio 
+                const char* buffer = "Did not change directory.\n";
+                synchConsole->WriteBuffer((char*)buffer, 27);
+            } 
+            // TIENE QUE SER ELSE IF?? O PODRIA SER IF Y QUE ENTRE A AMBOS?
+            else if (!strcmp(newDir, "..")) { // vuelve al directorio padre
+                const char* buffer = "Now in father directory.\n";
+                synchConsole->WriteBuffer((char*)buffer, 26);
                 currentThread->numDirectories--;
-            }
+            } 
+            // TIENE QUE SER ELSE?? O PODRIA SER IF Y QUE ENTRE A AMBOS?
             else { // es el nombre de un directorio. 
                 Directory* dir = new Directory(NUM_DIR_ENTRIES);
-                int actualDir = currentThread->directories[currentThread->numDirectories];
-                OpenFile* fileDir = new OpenFile(actualDir);
-                dir->FetchFrom(fileDir);
+                int oldNumDir = currentThread->numDirectories;
+                int oldDir = currentThread->directories[oldNumDir];
+                OpenFile* oldDirfile = new OpenFile(oldDir);
+                dir->FetchFrom(oldDirfile);
                 
                 char lastDir[FILE_NAME_MAX_LEN + 1];
                 char *otherDirs[10] = {NULL};
                 ParseDir(newDir, lastDir, otherDirs);
-                int x;
+                int x = 0;
                 for (int i = 0; otherDirs[i] != NULL; i++) {
                     x = dir->Find(otherDirs[i]);
                     if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
                         // no es una dir entry, o bien lo es pero es un archivo
                         DEBUG('e', "[%s] is not a sub directory.\n", otherDirs[i]);
+                        const char* buffer = "Did not change directory.\n";
+                        synchConsole->WriteBuffer((char*)buffer, 27);
+                        currentThread->numDirectories = oldNumDir; // reseteamos
                         break;
                     }
                     else { // es un subdirectorio
-                        // falta verificar que sea un directorio y no un archivo
-                        DEBUG('e', "Now in directory %s.\n", otherDirs[i]);
+                        currentThread->numDirectories++;
+                        currentThread->directories[currentThread->numDirectories] = x;
                     }
                 }
                 if (x != -1) {
@@ -177,14 +189,22 @@ SyscallHandler(ExceptionType _et)
                     if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
                         // no es una dir entry, o bien lo es pero es un archivo
                         DEBUG('e', "[%s] is not a sub directory.\n", lastDir);
+                        const char* buffer = "Did not change directory.\n";
+                        synchConsole->WriteBuffer((char*)buffer, 27);
+                        currentThread->numDirectories = oldNumDir; // reseteamos
                     }
                     else { // es un sub directorio
-                        DEBUG('e', "Now in directory %s.\n", lastDir);
+                        currentThread->numDirectories++;
+                        currentThread->directories[currentThread->numDirectories] = x;
+                        const char* buffer = "Now in directory ";
+                        synchConsole->WriteBuffer((char*)buffer, 18);
+                        synchConsole->WriteBuffer(lastDir, strlen(lastDir));
+                        synchConsole->WriteBuffer((char*)"\n", 2);
                     }
                 }
 
                 delete dir;
-                delete fileDir;
+                delete oldDirfile;
             }
             machine->WriteRegister(2, 0);
             #endif
@@ -438,8 +458,12 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             DEBUG('e', "`Exec` requested.\n");
+
             // crear un nuevo hilo
             Thread *newProc = new Thread("child", allowJoin, currentThread->GetPriority());
+            #ifdef FILESYS
+            newProc->ChangeDirectory(currentThread->numDirectories, currentThread->directories);
+            #endif
             
             // crear su AddressSpace
             OpenFile *executable = fileSystem->Open(filename);
@@ -495,7 +519,10 @@ SyscallHandler(ExceptionType _et)
             DEBUG('e', "`Exec2` requested.\n");
             // crear un nuevo hilo
             Thread *newProc = new Thread("child", allowJoin, currentThread->GetPriority());
-            
+            #ifdef FILESYS
+            newProc->ChangeDirectory(currentThread->numDirectories, currentThread->directories);
+            #endif
+
             // crear su AddressSpace
             OpenFile *executable = fileSystem->Open(filename);
             if (executable == nullptr) {

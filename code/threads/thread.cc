@@ -467,3 +467,16 @@ Thread::RemoveOpenFile(int fd){
     return openfiles->Remove(fd);
 }
 #endif
+
+#ifdef FILESYS
+
+void
+Thread::ChangeDirectory(int numDir, int dir[NUM_MAX_SUBDIRECTORIES]) {
+    for (int i = 0; i <= numDir; i++)
+        directories[i] = dir[i];
+    numDirectories = numDir;
+    return;
+}
+
+#endif 
+

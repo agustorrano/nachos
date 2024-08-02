@@ -209,6 +209,8 @@ public:
 #ifdef FILESYS
     int directories[NUM_MAX_SUBDIRECTORIES];
     int numDirectories;
+    
+    void ChangeDirectory(int numDir, int dir[NUM_MAX_SUBDIRECTORIES]);
 #endif 
 };
 
