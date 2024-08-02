@@ -127,6 +127,13 @@ main(void)
             newProc = Exec2(&line[1], argv, 0);
         else {
             if (!strcmpp(line, "cd")) Cd(argv[1]);
+            else if (!strcmpp(line, "ls")) {
+                if (argv[1] != NULL) { 
+                    WriteError("too many arguments.", OUTPUT);
+                    continue;
+                }
+                Ls();
+            }
             else {
                 newProc = Exec2(line, argv, 1);
                 Join(newProc);
