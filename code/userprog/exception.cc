@@ -152,18 +152,37 @@ SyscallHandler(ExceptionType _et)
             }
             else { // es el nombre de un directorio. 
                 Directory* dir = new Directory(NUM_DIR_ENTRIES);
-                int actualDir = currentThread->directories[numDirectories];
+                int actualDir = currentThread->directories[currentThread->numDirectories];
                 OpenFile* fileDir = new OpenFile(actualDir);
                 dir->FetchFrom(fileDir);
-                // habria que hacer esto en un for, habiendo ya parseado el newDir
-                int x = dir->Find(newDir);
-                if (x == -1) {// no es una dir entry
-                    DEBUG('e', "[%s] is not a sub directory.\n", newDir);
+                
+                char lastDir[FILE_NAME_MAX_LEN + 1];
+                char *otherDirs[10] = {NULL};
+                ParseDir(newDir, lastDir, otherDirs);
+                int x;
+                for (int i = 0; otherDirs[i] != NULL; i++) {
+                    x = dir->Find(otherDirs[i]);
+                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
+                        // no es una dir entry, o bien lo es pero es un archivo
+                        DEBUG('e', "[%s] is not a sub directory.\n", otherDirs[i]);
+                        break;
+                    }
+                    else { // es un subdirectorio
+                        // falta verificar que sea un directorio y no un archivo
+                        DEBUG('e', "Now in directory %s.\n", otherDirs[i]);
+                    }
                 }
-                else { // es una dir entry
-                    // falta verificar que sea un directorio y no un archivo
-                    DEBUG('e', "Now in directory %s.\n", newDir);
+                if (x != -1) {
+                    x = dir->Find(lastDir);
+                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
+                        // no es una dir entry, o bien lo es pero es un archivo
+                        DEBUG('e', "[%s] is not a sub directory.\n", lastDir);
+                    }
+                    else { // es un sub directorio
+                        DEBUG('e', "Now in directory %s.\n", lastDir);
+                    }
                 }
+
                 delete dir;
                 delete fileDir;
             }

@@ -183,11 +183,7 @@ ChangeDirectory(Directory *dir, unsigned length, char **outDir)
 
         if (dir->IsDirectory(sector)) {
             dirFile = new OpenFile(sector);
-            //printf("in change directory\n");
-            //dir->Print();
             dir->FetchFrom(dirFile);
-            //printf("in change directory\n");
-            //dir->Print();
         } else {
             DEBUG('f', "%s is not a directory.\n", outDir[i]);
             return nullptr;

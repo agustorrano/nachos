@@ -164,5 +164,6 @@ private:
 
 #endif
 
+void ParseDir(char* buffer, char outName[10], char* outDir[10]);
 
 #endif
