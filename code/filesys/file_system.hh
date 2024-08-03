@@ -97,6 +97,7 @@ public:
 #include "machine/disk.hh"
 #include "open_file_table.hh"
 #include "lib/bitmap.hh"
+#include "directory_list.hh"
 
 
 class Lock;
@@ -159,7 +160,9 @@ private:
                               ///< represented as a file.
     Lock *lockBitmap;
 
-    Lock *lockDirectory;
+    // Lock *lockDirectory;
+
+    DirectoryList *directories;
 };
 
 #endif

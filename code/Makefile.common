@@ -131,6 +131,7 @@ VMEM_SRC =
 
 FILESYS_HDR = filesys/directory.hh         \
               filesys/directory_entry.hh   \
+              filesys/directory_list.hh    \
               filesys/file_header.hh       \
               filesys/file_system.hh       \
               filesys/open_file.hh         \
@@ -141,6 +142,7 @@ FILESYS_HDR = filesys/directory.hh         \
               filesys/open_file_table.hh
 
 FILESYS_SRC = filesys/directory.cc         \
+              filesys/directory_list.cc    \
               filesys/file_header.cc       \
               filesys/file_system.cc       \
               filesys/fs_test.cc           \

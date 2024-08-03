@@ -28,9 +28,6 @@ OpenFile::OpenFile(int s)
     hdr->FetchFrom(s);
     seekPosition = 0;
     sector = s;
-    lockReadCount = new Lock("lockReadCount");
-    readCount = 0;
-    noReaders = new Condition("noReaders", lockReadCount);
 }
 
 /// Close a Nachos file, de-allocating any in-memory data structures.
@@ -39,8 +36,6 @@ OpenFile::~OpenFile()
     if (fileSystem->CloseOpenFile(sector))
         fileSystem->Release(sector);
     delete hdr;
-    delete lockReadCount;
-    delete noReaders;
 }
 
 /// Change the current location within the open file -- the point at which
@@ -118,16 +113,11 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
 
-    DEBUG('f', "Acquiring readers lock.\n");
-    AcquireRead();
-
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     char *buf;
 
     if (position >= fileLength) {
-        DEBUG('f', "Releasing readers lock.\n");
-        ReleaseRead();
         return 0;  // Check request.
     }
     if (position + numBytes > fileLength) {
@@ -149,8 +139,6 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
 
     // Copy the part we want.
     memcpy(into, &buf[position - firstSector * SECTOR_SIZE], numBytes);
-    DEBUG('f', "Releasing readers lock.\n");
-    ReleaseRead();
     delete [] buf;
     return numBytes;
 }
@@ -160,9 +148,6 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 {
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
-
-    DEBUG('f', "Acquiring writers lock.\n");
-    AcquireWrite();
 
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
@@ -184,8 +169,6 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         if(!hdr->Extend(freeMap, extendSize)) {
             DEBUG('f', "Unable to extend the file.\n");
             fileSystem->ReleaseFreeMap(freeMap);
-            DEBUG('f', "Releasing writers lock.\n");
-            ReleaseWrite();
             return 0;
         }
         fileLength = hdr->FileLength();
@@ -222,8 +205,6 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     }
-    DEBUG('f', "Releasing writers lock.\n");
-    ReleaseWrite();
     delete [] buf;
     return numBytes;
 }
@@ -233,41 +214,4 @@ unsigned
 OpenFile::Length() const
 {
     return hdr->FileLength();
-}
-
-void 
-OpenFile::AcquireRead()
-{
-    if (!lockReadCount->IsHeldByCurrentThread()) {
-        lockReadCount->Acquire();
-        readCount++;
-        lockReadCount->Release();
-    }
-}
-
-void 
-OpenFile::AcquireWrite()
-{
-    lockReadCount->Acquire();
-    while (readCount > 0)
-        noReaders->Wait();
-}
-
-void
-OpenFile::ReleaseRead()
-{
-    if (!lockReadCount->IsHeldByCurrentThread()) {
-        lockReadCount->Acquire();
-        readCount--;
-        if (readCount == 0)
-            noReaders->Broadcast();
-        lockReadCount->Release();
-    }
-}
-
-void
-OpenFile::ReleaseWrite()
-{
-    noReaders->Broadcast();
-    lockReadCount->Release();
 }

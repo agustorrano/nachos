@@ -115,19 +115,11 @@ public:
     // the UNIX idiom -- `lseek` to end of file, `tell`, `lseek` back).
     unsigned Length() const;
 
-    void AcquireRead();
-    void AcquireWrite();
-    void ReleaseRead();
-    void ReleaseWrite();
-
 private:
 
     FileHeader *hdr;  ///< Header for this file.
     unsigned seekPosition;  ///< Current position within the file.
     int sector;
-    Lock *lockReadCount;
-    int readCount;
-    Condition *noReaders;
 };
 
 #endif

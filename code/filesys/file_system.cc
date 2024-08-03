@@ -72,8 +72,9 @@ FileSystem::FileSystem(bool format)
 {
     DEBUG('f', "Initializing the file system.\n");
     lockBitmap = new Lock("lockBitmap");
-    lockDirectory = new Lock("lockDirectory");
     openfiles = new OpenFileTable(TABLE_INIT_CAPACITY);
+    directories = new DirectoryList();
+    Lock *lockDirectory = directories->AddDirectory(DIRECTORY_SECTOR);
 
     if (format) {
         Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
@@ -147,7 +148,7 @@ FileSystem::~FileSystem()
     delete freeMapFile;
     delete directoryFile;
     delete lockBitmap;
-    delete lockDirectory;
+    delete directories;
 }
 
 void
@@ -223,10 +224,13 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
 
-    DEBUG('f', "Creating file %s, size %u.\n", name, initialSize);
+    if (isDir)
+        DEBUG('f', "Creating directory %s, size %u.\n", name, initialSize);
+    else
+        DEBUG('f', "Creating file %s, size %u.\n", name, initialSize);
 
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    lockDirectory->Acquire();
+    //lockDirectory->Acquire();
     //dir->FetchFrom(directoryFile);
     int sector;
     #ifdef FILESYS
@@ -234,6 +238,8 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
+    Lock *lockDirectory = directories->AddDirectory(sector);
+    lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
     // length es la cantidad de directorios que hay ("userland/shell.cc == 1")
     unsigned length = 0;
@@ -326,7 +332,7 @@ FileSystem::Open(const char *name)
     OpenFile  *openFile = nullptr;
 
     DEBUG('f', "Opening file %s.\n", name);
-    lockDirectory->Acquire();
+    // lockDirectory->Acquire();
     
     int sector;
     #ifdef FILESYS
@@ -334,6 +340,8 @@ FileSystem::Open(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
+    Lock *lockDirectory = directories->AddDirectory(sector);
+    lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
 
     //dir->FetchFrom(directoryFile);
@@ -401,7 +409,7 @@ FileSystem::Remove(const char *name)
     DEBUG('f', "Removing file %s.\n", name);
     ASSERT(name != nullptr);
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    lockDirectory->Acquire();
+    // lockDirectory->Acquire();
     
     int sector;
     #ifdef FILESYS
@@ -409,6 +417,8 @@ FileSystem::Remove(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
+    Lock *lockDirectory = directories->AddDirectory(sector);
+    lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
     
     //dir->FetchFrom(directoryFile);
@@ -511,6 +521,7 @@ void
 FileSystem::List()
 {
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    Lock *lockDirectory = directories->AddDirectory(DIRECTORY_SECTOR);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile); // ESTE LO CAMBIAMOS?
     /*
