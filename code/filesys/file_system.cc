@@ -236,11 +236,13 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     #ifdef FILESYS
     sector = currentThread->directories[currentThread->numDirectories];
     #endif
+
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
     Lock *lockDirectory = directories->AddDirectory(sector);
     lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
+
     // length es la cantidad de directorios que hay ("userland/shell.cc == 1")
     unsigned length = 0;
     
@@ -252,7 +254,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     OpenFile *dirFile;
 
     if (length != 0) {
-        char *outDir[10] = {NULL};
+        char *outDir[10] = {nullptr};
         char* buffer = new char [strlen(name)];
         strcpy(buffer, name);
         ParseDir(buffer, fileName, outDir);
