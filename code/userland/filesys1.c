@@ -12,11 +12,11 @@ main(void)
     OpenFileId mundo = Open("a/Mundo");
     while(mundo == -1)
         mundo = Open("a/Mundo");
-    putss("filesyst1 escribiendo..");
+    putss("filesys1 escribiendo..");
     for(int i = 0; i < 100; i++)
         if(Write("Mundo", 5, mundo) == -1)
             putss("Error: No se pudo escribir mundo");
-    putss("filesyst1 escribió en Mundo. ");
+    putss("filesys1 escribió en Mundo. ");
     Close(mundo);
     Remove("a/Mundo");
     Exit(0);

@@ -18,8 +18,8 @@ main(void)
 {
     char rc[5];
     rc[4] = 0;
-    SpaceId t1 = Exec("filesyst1", 0);
-    SpaceId t2 = Exec("filesyst2", 0);
+    SpaceId t1 = Exec("filesys1", 0);
+    SpaceId t2 = Exec("filesys2", 0);
     OpenFileId hola = Open("a/Hola");
     while(hola == -1)
         hola = Open("a/Hola");

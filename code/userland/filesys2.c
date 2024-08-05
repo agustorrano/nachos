@@ -7,13 +7,13 @@ main(void)
 {
     putss("HOLA!\n");
     int j = Create("a/Mundo");   
-    if(j != -1 ) putss("Success: Archivo Mundo creado por filesyst2.");
+    if(j != -1 ) putss("Success: Archivo Mundo creado por filesys2.");
     else putss("Error: No se pudo crear archivo Mundo.");
     
     OpenFileId hola = Open("a/Hola");
     while(hola == -1)
         hola = Open("a/Hola");
-    putss("Success: Archivo Hola abierto por filesyst2");
+    putss("Success: Archivo Hola abierto por filesys2");
     
     char buf[100], rc[5];
     buf[99] = 0;
