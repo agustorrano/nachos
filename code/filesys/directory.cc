@@ -67,7 +67,6 @@ Directory::FetchFrom(OpenFile *file)
 void
 Directory::WriteBack(OpenFile *file)
 {
-    DEBUG('f', "WriteBack.\n");
     ASSERT(file != nullptr);
     file->WriteAt((char *) raw.table,
                   raw.tableSize * sizeof (DirectoryEntry), 0);
@@ -172,10 +171,8 @@ Directory::Remove(const char *name)
 void
 Directory::List() const
 {
-    DEBUG('r', "tableSize: %d.\n", raw.tableSize);
     for (unsigned i = 0; i < raw.tableSize; i++) {
         if (raw.table[i].inUse) {
-            DEBUG('r', "[%d] In use: %s.\n", i, raw.table[i].name);
             printf("%s\n", raw.table[i].name);
         }
     }
@@ -197,8 +194,9 @@ Directory::Print() const
             hdr->FetchFrom(raw.table[i].sector);
             hdr->Print(nullptr);
             if (raw.table[i].isDir) {
-                Directory *dir = new Directory(NUM_DIR_ENTRIES);
                 OpenFile* file = new OpenFile(raw.table[i].sector);
+                int numDirEntries = file->Length() / sizeof (DirectoryEntry);
+                Directory *dir = new Directory(numDirEntries);
                 dir->FetchFrom(file);
                 printf("--------------------------------\n");
                 printf("\nDirectory %s contents:\n", raw.table[i].name);

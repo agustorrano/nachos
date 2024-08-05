@@ -111,7 +111,8 @@ SyscallHandler(ExceptionType _et)
             DEBUG('e', "Listing current directory, initiated by user program.\n");
             int sector = currentThread->directories[currentThread->numDirectories];
             OpenFile* currentDirfile = new OpenFile(sector);
-            Directory *dir = new Directory(NUM_DIR_ENTRIES);
+            int numDirEntries = currentDirfile->Length() / sizeof (DirectoryEntry);
+            Directory *dir = new Directory(numDirEntries);
             dir->FetchFrom(currentDirfile); 
             dir->List();
             machine->WriteRegister(2,0);
@@ -139,7 +140,8 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, 0);
                 break;
             }
-            char newDir[FILE_NAME_MAX_LEN + 1];
+            char newDir[FILE_NAME_MAX_LEN*5];
+            // char* newDir = new char[FILE_NAME_MAX_LEN*5];
             if (!ReadStringFromUser(newDirAddr,
                                     newDir, sizeof newDir)) {
                 DEBUG('e', "Error: directory string too long (maximum is %u bytes).\n",
@@ -147,27 +149,98 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
-            if (!strcmp(newDir, ".")) {// queda en el mismo directorio 
-                const char* buffer = "Did not change directory.\n";
-                synchConsole->WriteBuffer((char*)buffer, 27);
-            } 
-            // TIENE QUE SER ELSE IF?? O PODRIA SER IF Y QUE ENTRE A AMBOS?
-            else if (!strcmp(newDir, "..")) { // vuelve al directorio padre
-                const char* buffer = "Now in father directory.\n";
-                synchConsole->WriteBuffer((char*)buffer, 26);
-                currentThread->numDirectories--;
-            } 
-            // TIENE QUE SER ELSE?? O PODRIA SER IF Y QUE ENTRE A AMBOS?
-            else { // es el nombre de un directorio. 
-                Directory* dir = new Directory(NUM_DIR_ENTRIES);
+                
+            // primero parseamos por '/'
+            char lastDir[FILE_NAME_MAX_LEN + 1];
+            char *otherDirs[10] = {NULL};
+            ParseDir(newDir, lastDir, otherDirs);
+            
+            int x = 0;
+            for (int i = 0; otherDirs[i] != NULL; i++) {
+                if (!strcmp(newDir, ".")) {;}// queda en el mismo directorio 
+                else if (!strcmp(newDir, "..")) { // vuelve al directorio padre
+                    const char* buffer = "Now in father directory.\n";
+                    synchConsole->WriteBuffer((char*)buffer, 26);
+                    currentThread->numDirectories--;
+                }
+                else {
+                    // estructuras necesarias
+                    int oldNumDir = currentThread->numDirectories;
+                    int oldDir = currentThread->directories[oldNumDir];
+                    OpenFile* oldDirfile = new OpenFile(oldDir);
+                    int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
+                    Directory* dir = new Directory(numDirEntries);
+                    dir->FetchFrom(oldDirfile);
+                    
+                    x = dir->Find(otherDirs[i]);
+                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
+                        // no es una dir entry, o bien lo es pero es un archivo
+                        DEBUG('e', "[%s] is not a sub directory.\n", otherDirs[i]);
+                        const char* buffer = "Did not change directory.\n";
+                        synchConsole->WriteBuffer((char*)buffer, 27);
+                        currentThread->numDirectories = oldNumDir; // reseteamos
+                        break;
+                    } else { // es un subdirectorio
+                        currentThread->numDirectories++;
+                        currentThread->directories[currentThread->numDirectories] = x;
+                    }
+                    delete dir;
+                    delete oldDirfile;
+                }
+            }
+
+            // ultima iteracion
+            if (x != -1) {
+                if (!strcmp(lastDir, ".")) {;}// queda en el mismo directorio 
+                else if (!strcmp(lastDir, "..")) { // vuelve al directorio padre
+                    const char* buffer = "Now in father directory.\n";
+                    synchConsole->WriteBuffer((char*)buffer, 26);
+                    currentThread->numDirectories--;
+                }
+                else {
+                    int oldNumDir = currentThread->numDirectories;
+                    int oldDir = currentThread->directories[oldNumDir];
+                    OpenFile* oldDirfile = new OpenFile(oldDir);
+
+                    int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
+                    Directory* dir = new Directory(numDirEntries);
+                    dir->FetchFrom(oldDirfile);
+
+                    x = dir->Find(lastDir);
+                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
+                        // no es una dir entry, o bien lo es pero es un archivo
+                        DEBUG('e', "[%s] is not a sub directory.\n", lastDir);
+                        const char* buffer = "Did not change directory.\n";
+                        synchConsole->WriteBuffer((char*)buffer, 27);
+                        currentThread->numDirectories = oldNumDir; // reseteamos
+                    }
+                    else { // es un sub directorio
+                        currentThread->numDirectories++;
+                        currentThread->directories[currentThread->numDirectories] = x;
+                        const char* buffer = "Now in directory ";
+                        synchConsole->WriteBuffer((char*)buffer, 18);
+                        synchConsole->WriteBuffer(lastDir, strlen(lastDir));
+                        synchConsole->WriteBuffer((char*)"\n", 2);
+                    }
+
+                    delete dir;
+                    delete oldDirfile;
+                }
+            }
+
+
+            /* else { // es el nombre de un directorio. 
                 int oldNumDir = currentThread->numDirectories;
                 int oldDir = currentThread->directories[oldNumDir];
                 OpenFile* oldDirfile = new OpenFile(oldDir);
+                
+                int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
+                Directory* dir = new Directory(numDirEntries);
                 dir->FetchFrom(oldDirfile);
                 
                 char lastDir[FILE_NAME_MAX_LEN + 1];
                 char *otherDirs[10] = {NULL};
-                ParseDir(newDir, lastDir, otherDirs);
+                ParseDir(newDir, lastDir, otherDirs); 
                 int x = 0;
                 for (int i = 0; otherDirs[i] != NULL; i++) {
                     x = dir->Find(otherDirs[i]);
@@ -205,7 +278,7 @@ SyscallHandler(ExceptionType _et)
 
                 delete dir;
                 delete oldDirfile;
-            }
+            }*/
             machine->WriteRegister(2, 0);
             #endif
             break;

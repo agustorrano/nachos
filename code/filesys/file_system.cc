@@ -226,9 +226,6 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
     else
         DEBUG('f', "Creating file %s, size %u.\n", name, initialSize);
 
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    //lockDirectory->Acquire();
-    //dir->FetchFrom(directoryFile);
     int sector;
     #ifdef FILESYS
     sector = currentThread->directories[currentThread->numDirectories];
@@ -236,6 +233,8 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
 
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
+    int numDirEntries = actualdirFile->Length() / sizeof (DirectoryEntry);
+    Directory *dir = new Directory(numDirEntries);
     
     dir->FetchFrom(actualdirFile);
 
@@ -336,11 +335,9 @@ OpenFile *
 FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    OpenFile  *openFile = nullptr;
-
     DEBUG('f', "Opening file %s.\n", name);
-    // lockDirectory->Acquire();
+
+    OpenFile  *openFile = nullptr;
     
     int sector;
     #ifdef FILESYS
@@ -348,9 +345,11 @@ FileSystem::Open(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
+    
+    int numDirEntries = actualdirFile->Length() / sizeof (DirectoryEntry);
+    Directory *dir = new Directory(numDirEntries);
     dir->FetchFrom(actualdirFile);
 
-    //dir->FetchFrom(directoryFile);
 
     unsigned length = 0;
     
@@ -421,10 +420,8 @@ FileSystem::Open(const char *name)
 bool
 FileSystem::Remove(const char *name)
 {
-    DEBUG('f', "Removing file %s.\n", name);
     ASSERT(name != nullptr);
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
-    // lockDirectory->Acquire();
+    DEBUG('f', "Removing file %s.\n", name);
     
     int sector;
     #ifdef FILESYS
@@ -432,9 +429,10 @@ FileSystem::Remove(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
-    dir->FetchFrom(actualdirFile);
     
-    //dir->FetchFrom(directoryFile);
+    int numDirEntries = actualdirFile->Length() / sizeof (DirectoryEntry);
+    Directory *dir = new Directory(numDirEntries);
+    dir->FetchFrom(actualdirFile);
 
     unsigned length = 0;
     
@@ -480,8 +478,9 @@ FileSystem::Remove(const char *name)
     int isDir = dir->IsDirectory(sector);
 
     if (isDir) {
-        Directory *dirToDelete = new Directory(NUM_DIR_ENTRIES);
         OpenFile *dirFileToDelete = new OpenFile(sector);
+        numDirEntries = dirFileToDelete->Length() / sizeof (DirectoryEntry);   
+        Directory *dirToDelete = new Directory(numDirEntries);
         dirToDelete->FetchFrom(dirFileToDelete);
         
         const RawDirectory *raw = dirToDelete->GetRaw();
@@ -545,7 +544,8 @@ FileSystem::Release(int sector) {
 void
 FileSystem::List()
 {
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    int numDirEntries = directoryFile->Length() / sizeof (DirectoryEntry);   
+    Directory *dir = new Directory(numDirEntries);
     Lock *lockDirectory = directories->AddDirectory(DIRECTORY_SECTOR);
     lockDirectory->Acquire();
     dir->FetchFrom(directoryFile);
@@ -711,7 +711,10 @@ FileSystem::Check()
 
     Bitmap *freeMap = new Bitmap(NUM_SECTORS);
     freeMap->FetchFrom(freeMapFile);
-    Directory *dir = new Directory(NUM_DIR_ENTRIES);
+    
+    int numDirEntries = directoryFile->Length() / sizeof (DirectoryEntry);   
+    Directory *dir = new Directory(numDirEntries);
+    
     const RawDirectory *rdir = dir->GetRaw();
     dir->FetchFrom(directoryFile);
     error |= CheckDirectory(rdir, shadowMap);
@@ -740,7 +743,9 @@ FileSystem::Print()
     FileHeader *bitH    = new FileHeader;
     FileHeader *dirH    = new FileHeader;
     Bitmap     *freeMap = new Bitmap(NUM_SECTORS);
-    Directory  *dir     = new Directory(NUM_DIR_ENTRIES);
+    
+    int numDirEntries = directoryFile->Length() / sizeof (DirectoryEntry);   
+    Directory  *dir     = new Directory(numDirEntries);
 
     printf("--------------------------------\n");
     bitH->FetchFrom(FREE_MAP_SECTOR);
@@ -755,7 +760,7 @@ FileSystem::Print()
     freeMap->Print();
 
     printf("--------------------------------\n");
-    dir->FetchFrom(directoryFile); // PODRIAMOS MEJORAR ESTA FUNCION Y QUE IMPRIMA DIRECTORIOS?
+    dir->FetchFrom(directoryFile);
     printf("Directory root contents:\n");
     dir->Print();
     printf("--------------------------------\n");
