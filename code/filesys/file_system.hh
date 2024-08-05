@@ -36,6 +36,12 @@
 #define NACHOS_FILESYS_FILESYSTEM__HH
 
 
+/// Sectors containing the file headers for the bitmap of free sectors, and
+/// the directory of files.  These file headers are placed in well-known
+/// sectors, so that they can be located on boot-up.
+static const unsigned FREE_MAP_SECTOR = 0;
+static const unsigned DIRECTORY_SECTOR = 1;
+
 #include "open_file.hh"
 
 

@@ -118,6 +118,7 @@ bool
 Directory::Add(const char *name, int newSector, bool isDir)
 {
     ASSERT(name != nullptr);
+    DEBUG('f', "Directory::Add.\n");
 
     if (FindIndex(name) != -1) {
         return false;
@@ -145,6 +146,7 @@ Directory::Add(const char *name, int newSector, bool isDir)
     newTable[raw.tableSize - 1].inUse = true;
     strncpy(newTable[raw.tableSize - 1].name, name, FILE_NAME_MAX_LEN);
     newTable[raw.tableSize - 1].sector = newSector;
+    raw.table = newTable;
 
     return true;  // no space.  Fix when we have extensible files.
 }
@@ -195,7 +197,7 @@ Directory::Print() const
             hdr->FetchFrom(raw.table[i].sector);
             hdr->Print(nullptr);
             if (raw.table[i].isDir) {
-                Directory *dir = new Directory(raw.table[i].sector);
+                Directory *dir = new Directory(NUM_DIR_ENTRIES);
                 OpenFile* file = new OpenFile(raw.table[i].sector);
                 dir->FetchFrom(file);
                 printf("--------------------------------\n");

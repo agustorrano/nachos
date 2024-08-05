@@ -62,7 +62,7 @@ Thread::Thread(const char *threadName, int join)
     pid = threadsTable->Add(this);
 #endif
 #ifdef FILESYS
-    directories[0] = 1; // DIRECTORY_SECTOR
+    directories[0] = DIRECTORY_SECTOR;
     numDirectories = 0;
 #endif
 }
@@ -88,7 +88,7 @@ Thread::Thread(const char *threadName, int join, const unsigned int threadPriori
     pid = threadsTable->Add(this);
 #endif
 #ifdef FILESYS
-    directories[0] = 1; //DIRECTORY_SECTOR; // SECTOR 1
+    directories[0] = DIRECTORY_SECTOR;
     numDirectories = 0;
 #endif
 }
