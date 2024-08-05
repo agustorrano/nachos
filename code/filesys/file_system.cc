@@ -239,8 +239,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
 
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
-    Lock *lockDirectory = directories->AddDirectory(sector);
-    lockDirectory->Acquire();
+    
     dir->FetchFrom(actualdirFile);
 
     // length es la cantidad de directorios que hay ("userland/shell.cc == 1")
@@ -262,16 +261,20 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
         // change directory
         dirFile = ChangeDirectory(dir, length, outDir);
         if (dirFile == nullptr) {
-            lockDirectory->Release();
+            // lockDirectory->Release();
             delete dir;
             delete buffer;
             delete dirFile;
             return false;
         }
         delete buffer;
+        sector = dirFile->GetSector();
     } else {
         strcpy(fileName, name);
     }
+
+    Lock *lockDirectory = directories->AddDirectory(sector);
+    lockDirectory->Acquire();
 
     bool success;
 
@@ -342,8 +345,6 @@ FileSystem::Open(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
-    Lock *lockDirectory = directories->AddDirectory(sector);
-    lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
 
     //dir->FetchFrom(directoryFile);
@@ -366,7 +367,7 @@ FileSystem::Open(const char *name)
         // change directory
         dirFile = ChangeDirectory(dir, length, outDir);
         if (dirFile == nullptr) {
-            lockDirectory->Release();
+            // lockDirectory->Release();
             delete dir;
             delete buffer;
             delete dirFile;
@@ -377,7 +378,15 @@ FileSystem::Open(const char *name)
         strcpy(fileName, name);
     }
 
+    Lock *lockDirectory = directories->AddDirectory(dirFile->GetSector());
+    lockDirectory->Acquire();
     sector = dir->Find(fileName);
+
+    if (sector == -1) {
+        DEBUG('f', "File %s does not exist.\n", fileName);
+        lockDirectory->Release();
+        return nullptr;
+    }
 
     if (dir->IsDirectory(sector))
         DEBUG('f', "Trying to open directory %s.\n", fileName);
@@ -419,8 +428,6 @@ FileSystem::Remove(const char *name)
     #endif
     OpenFile* actualdirFile = directoryFile;
     if (sector != 1) actualdirFile = new OpenFile(sector);
-    Lock *lockDirectory = directories->AddDirectory(sector);
-    lockDirectory->Acquire();
     dir->FetchFrom(actualdirFile);
     
     //dir->FetchFrom(directoryFile);
@@ -432,7 +439,7 @@ FileSystem::Remove(const char *name)
     }
 
     char fileName[FILE_NAME_MAX_LEN + 1];
-    OpenFile *dirFile;
+    OpenFile *dirFile = actualdirFile;
 
     if (length != 0) {
         char *outDir[10] = {NULL};
@@ -443,7 +450,7 @@ FileSystem::Remove(const char *name)
         // change directory
         dirFile = ChangeDirectory(dir, length, outDir);
         if (dirFile == nullptr) {
-            lockDirectory->Release();
+            // lockDirectory->Release();
             delete dir;
             delete buffer;
             delete dirFile;
@@ -454,6 +461,9 @@ FileSystem::Remove(const char *name)
         strcpy(fileName, name);
     }
 
+    Lock *lockDirectory = directories->AddDirectory(dirFile->GetSector());
+    lockDirectory->Acquire();
+
     sector = dir->Find(fileName);
     if (sector == -1) {
         DEBUG('f', "Unable to remove because file %s was not found.\n", name);
@@ -462,24 +472,29 @@ FileSystem::Remove(const char *name)
         return false;  // file not found
     }
 
-    // antes de eliminar un directorio tendría que verificar que está
-    // vacío o borro todo lo que tiene??
-    if (dir->IsDirectory(sector)) {
+    int isDir = dir->IsDirectory(sector);
+
+    if (isDir) {
         Directory *dirToDelete = new Directory(NUM_DIR_ENTRIES);
-        dirToDelete->FetchFrom(dirFile);
+        OpenFile *dirFileToDelete = new OpenFile(sector);
+        dirToDelete->FetchFrom(dirFileToDelete);
         
         const RawDirectory *raw = dirToDelete->GetRaw();
         for (unsigned i = 0; i < raw->tableSize; i++) {
             if (raw->table[i].inUse) {
-                DEBUG('f', "Directory is not empty.\n");
-                delete dirToDelete;
-                delete dirFile;
-                return false;
+                DEBUG('f', "Removing file %s from directory %s.\n", raw->table[i].name, fileName);
+                if (!Remove(raw->table[i].name)) {
+                    lockDirectory->Release();
+                    delete dirToDelete;
+                    delete dirFile;
+                    return false;
+                }
             }
         }
+        // lockDirectory->Release();
         delete dirToDelete;
-        Release(sector);
-        return true;
+        delete dirFileToDelete;
+        // Release(sector);
     }
     
     // siempre se borra del directorio
@@ -495,10 +510,13 @@ FileSystem::Remove(const char *name)
     if (openfiles->IsOpen(sector))
         openfiles->MarkToDelete(sector); // marcamos que deberá borrarse del disco
         // se elimina del directorio pero no del disco
-    else {
+    else 
         Release(sector);
-    }
+    
     lockDirectory->Release();
+    if (isDir)
+        directories->CloseDirectory(sector);
+    
     delete dir;
     return true;
 }
@@ -525,16 +543,7 @@ FileSystem::List()
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     Lock *lockDirectory = directories->AddDirectory(DIRECTORY_SECTOR);
     lockDirectory->Acquire();
-    dir->FetchFrom(directoryFile); // ESTE LO CAMBIAMOS?
-    /*
-    int sector;
-    #ifdef FILESYS
-    sector = currentThread->directories[currentThread->numDirectories];
-    #endif
-    OpenFile* actualdirFile = directoryFile;
-    if (sector != 1) actualdirFile = new OpenFile(sector);
-    dir->FetchFrom(actualdirFile);
-    */
+    dir->FetchFrom(directoryFile);
     dir->List();
     lockDirectory->Release();
     delete dir;

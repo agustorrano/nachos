@@ -192,6 +192,11 @@ Directory::Print() const
                    raw.table[i].name, raw.table[i].sector);
             hdr->FetchFrom(raw.table[i].sector);
             hdr->Print(nullptr);
+            if (raw.table[i].isDir) {
+                Directory *dir = new Directory(raw.table[i].sector);
+                dir->Print();
+                delete dir;
+            }
         }
     }
     printf("\n");
