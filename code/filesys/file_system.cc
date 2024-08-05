@@ -223,9 +223,12 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
 {
     ASSERT(name != nullptr);
     ASSERT(initialSize < MAX_FILE_SIZE);
-
-    if (isDir)
+    
+    Directory* newDir;
+    if (isDir) {
         DEBUG('f', "Creating directory %s, size %u.\n", name, initialSize);
+        newDir = new Directory(NUM_DIR_ENTRIES);
+    }
     else
         DEBUG('f', "Creating file %s, size %u.\n", name, initialSize);
 
@@ -303,6 +306,12 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
                 // Everything worked, flush all changes back to disk.
                 DEBUG('f', "Successful creation of file %s.\n", name);
                 h->WriteBack(sector);
+                if (isDir) {
+                    OpenFile *newFile = new OpenFile(sector);
+                    newDir->WriteBack(newFile);
+                    //delete newFile;
+                    //delete newDir;
+                }
                 if (length == 0)
                     dir->WriteBack(actualdirFile);
                     //dir->WriteBack(directoryFile);
@@ -374,11 +383,12 @@ FileSystem::Open(const char *name)
             return nullptr;
         }
         delete buffer;
+        sector = dirFile->GetSector();
     } else {
         strcpy(fileName, name);
     }
 
-    Lock *lockDirectory = directories->AddDirectory(dirFile->GetSector());
+    Lock *lockDirectory = directories->AddDirectory(sector);
     lockDirectory->Acquire();
     sector = dir->Find(fileName);
 
@@ -457,11 +467,12 @@ FileSystem::Remove(const char *name)
             return false;
         }
         delete buffer;
+        sector = dirFile->GetSector();
     } else {
         strcpy(fileName, name);
     }
 
-    Lock *lockDirectory = directories->AddDirectory(dirFile->GetSector());
+    Lock *lockDirectory = directories->AddDirectory(sector);
     lockDirectory->Acquire();
 
     sector = dir->Find(fileName);
@@ -751,6 +762,7 @@ FileSystem::Print()
 
     printf("--------------------------------\n");
     dir->FetchFrom(directoryFile); // PODRIAMOS MEJORAR ESTA FUNCION Y QUE IMPRIMA DIRECTORIOS?
+    printf("Directory root contents:\n");
     dir->Print();
     printf("--------------------------------\n");
 
