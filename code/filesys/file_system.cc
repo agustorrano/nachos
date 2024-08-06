@@ -168,6 +168,7 @@ ChangeDirectory(Directory *dir, unsigned length, char **outDir)
 {
     int sector;
     OpenFile *dirFile;
+    int numDirEntries;
     for (unsigned i = 0; i < length; i++) {
         sector = dir->Find(outDir[i]);
 
@@ -178,6 +179,10 @@ ChangeDirectory(Directory *dir, unsigned length, char **outDir)
 
         if (dir->IsDirectory(sector)) {
             dirFile = new OpenFile(sector);
+            numDirEntries = dirFile->Length() / sizeof (DirectoryEntry);
+            DEBUG('p', "numDirEntries: %d\n", numDirEntries);
+            delete dir;
+            dir = new Directory(numDirEntries);
             dir->FetchFrom(dirFile);
         } else {
             DEBUG('f', "%s is not a directory.\n", outDir[i]);
