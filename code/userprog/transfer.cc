@@ -20,7 +20,8 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
     while (count < byteCount) {
         count++;
         //ASSERT(machine->ReadMem(userAddress++, 1, &temp));
-        for (i = 0; i < maxIter && !machine->ReadMem(userAddress++, 1, &temp); i++);
+        for (i = 0; i < maxIter && !machine->ReadMem(userAddress, 1, &temp); i++);
+        userAddress++;
         if (i == maxIter) ASSERT(0);
         *outBuffer = (unsigned char) temp;
         outBuffer++;
@@ -42,7 +43,8 @@ bool ReadStringFromUser(int userAddress, char *outString,
         int temp;
         count++;
         //ASSERT(machine->ReadMem(userAddress++, 1, &temp));
-        for (i = 0; i < maxIter && !machine->ReadMem(userAddress++, 1, &temp); i++);
+        for (i = 0; i < maxIter && !machine->ReadMem(userAddress, 1, &temp); i++);
+        userAddress++;
         if (i == maxIter) ASSERT(0);
         *outString = (unsigned char) temp;
     } while (*outString++ != '\0' && count < maxByteCount);
@@ -62,7 +64,8 @@ void WriteBufferToUser(const char *buffer, int userAddress,
         int temp = (int) *buffer;
         count++;
         //ASSERT(machine->WriteMem(userAddress++, 1, temp));
-        for (i = 0; i < maxIter && !machine->WriteMem(userAddress++, 1, temp); i++);
+        for (i = 0; i < maxIter && !machine->WriteMem(userAddress, 1, temp); i++);
+        userAddress++;
         if (i == maxIter) ASSERT(0);
         buffer++;
     }
@@ -78,7 +81,8 @@ void WriteStringToUser(const char *string, int userAddress)
     do {
         int temp = (int) *string;
         //ASSERT(machine->WriteMem(userAddress++, 1, temp));
-        for (i = 0; i < maxIter && !machine->WriteMem(userAddress++, 1, temp); i++);
+        for (i = 0; i < maxIter && !machine->WriteMem(userAddress, 1, temp); i++);
+        userAddress++;
         if (i == maxIter) ASSERT(0);
     } while (*string++ != '\0');
     return;

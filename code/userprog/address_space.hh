@@ -75,5 +75,7 @@ private:
     unsigned numPages;
 };
 
+void PrintPageTable(AddressSpace* space);
 
 #endif
+

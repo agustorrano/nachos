@@ -79,7 +79,7 @@ int DoSwapOut()
     // actualizar la tabla del proceso al que pertenece
     pageTable[vpn].valid = false;
 
-    // actualizar la tlb    
+    // actualizar la tlb
     for (unsigned i = 0; i < TLB_SIZE; i++) {
         if (machine->GetMMU()->tlb[i].virtualPage == vpn) {
             machine->GetMMU()->tlb[i].valid = false;
@@ -103,13 +103,13 @@ int DoSwapIn(unsigned vpn)
 }
 
 
-void PrintPageTable(AddressSpace* space) {
+/* void PrintPageTable(AddressSpace* space) {
     TranslationEntry* pageTable = space->GetPageTable();
     int size = space->GetNumPages();
     for (int i = 0; i < size; i++) {
         TranslationEntry p = pageTable[i];
         printf("[%d]: PhysPage Number: %d, valid: %d, use: %d, dirty: %d.\n", i, p.physicalPage, p.valid, p.use, p.dirty);
     }
-}
+} */
 
 #endif

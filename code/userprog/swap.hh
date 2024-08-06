@@ -9,8 +9,8 @@ class AddressSpace;
 int PickVictim(AddressSpace** space, unsigned* vpn);
 int DoSwapIn(unsigned vpn);
 int DoSwapOut();
-
-void PrintPageTable(AddressSpace* space);
+/* 
+void PrintPageTable(AddressSpace* space); */
 
 #endif
 #endif

@@ -11,6 +11,7 @@
 #include "threads/system.hh"
 #include "swap.hh"
 
+#include "stdio.h"
 #include <string.h>
 
 
@@ -324,4 +325,14 @@ AddressSpace::CheckPageinMemory(uint32_t vpn)
     }
     DEBUG('a', "Page %d is in memory, at frame %d.\n", pageTable[vpn].virtualPage, pageTable[vpn].physicalPage);
     return pageTable[vpn];
+}
+
+void PrintPageTable(AddressSpace* space) {
+    TranslationEntry* pageTable = space->GetPageTable();
+    int size = space->GetNumPages();
+    for (int i = 0; i < size; i++) {
+        TranslationEntry p = pageTable[i];
+        printf("[%d]: PhysPage Number: %d, valid: %d, use: %d, dirty: %d.\n", i, p.physicalPage, p.valid, p.use, p.dirty);
+    }
+    printf("---------------------------------------------\n");
 }

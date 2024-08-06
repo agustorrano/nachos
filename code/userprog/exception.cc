@@ -546,7 +546,7 @@ SyscallHandler(ExceptionType _et)
 
             char** args = SaveArgs(argsAddr);
 
-            DEBUG('e', "`Exec2` requested.\n");
+            DEBUG('e', "`Exec2` requested for file %s.\n", filename);
             // crear un nuevo hilo
             Thread *newProc = new Thread("child", allowJoin, currentThread->GetPriority());
             #ifdef FILESYS
@@ -608,7 +608,9 @@ PageFaultHandler (ExceptionType _et)
 {
     uint32_t vAddr = machine->ReadRegister(BAD_VADDR_REG);
     uint32_t vpn = DivRoundDown(vAddr, PAGE_SIZE);
-    // DEBUG('e', "Page [%d] Fault.\n", vpn);
+    //DEBUG('e', "Page [%d] Fault.\n", vpn);
+    //machine->GetMMU()->PrintTLB();
+    //PrintPageTable(currentThread->space);
     int i = stats->numPageFaults++ % TLB_SIZE; 
     TranslationEntry page = currentThread->space->CheckPageinMemory(vpn);
     if (machine->GetMMU()->tlb[i].valid) {
