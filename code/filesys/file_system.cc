@@ -180,7 +180,7 @@ ChangeDirectory(Directory *dir, unsigned length, char **outDir)
         if (dir->IsDirectory(sector)) {
             dirFile = new OpenFile(sector);
             numDirEntries = dirFile->Length() / sizeof (DirectoryEntry);
-            DEBUG('p', "numDirEntries: %d\n", numDirEntries);
+            //DEBUG('p', "numDirEntries: %d\n", numDirEntries);
             delete dir;
             dir = new Directory(numDirEntries);
             dir->FetchFrom(dirFile);

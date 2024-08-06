@@ -149,6 +149,12 @@ SyscallHandler(ExceptionType _et)
                 machine->WriteRegister(2, -1);
                 break;
             }
+
+            // en caso de que haya un error en el pedido, al final se restaura al original
+            int restoreNumDir = currentThread->numDirectories;
+            int restoreDir [NUM_MAX_SUBDIRECTORIES];
+            for (unsigned j = 0; j < NUM_MAX_SUBDIRECTORIES; j++)
+                restoreDir[j] = currentThread->directories[j];
                 
             // primero parseamos por '/'
             char lastDir[FILE_NAME_MAX_LEN + 1];
@@ -165,12 +171,12 @@ SyscallHandler(ExceptionType _et)
                 }
                 else {
                     // estructuras necesarias
-                    int oldNumDir = currentThread->numDirectories;
-                    int oldDir = currentThread->directories[oldNumDir];
-                    OpenFile* oldDirfile = new OpenFile(oldDir);
-                    int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
+                    int currentNumDir = currentThread->numDirectories;
+                    int currentDir = currentThread->directories[currentNumDir];
+                    OpenFile* currentDirfile = new OpenFile(currentDir);
+                    int numDirEntries = currentDirfile->Length() / sizeof (DirectoryEntry);    
                     Directory* dir = new Directory(numDirEntries);
-                    dir->FetchFrom(oldDirfile);
+                    dir->FetchFrom(currentDirfile);
                     
                     x = dir->Find(otherDirs[i]);
                     if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
@@ -178,14 +184,16 @@ SyscallHandler(ExceptionType _et)
                         DEBUG('e', "[%s] is not a sub directory.\n", otherDirs[i]);
                         const char* buffer = "Did not change directory.\n";
                         synchConsole->WriteBuffer((char*)buffer, 27);
-                        currentThread->numDirectories = oldNumDir; // reseteamos
+                        currentThread->numDirectories = restoreNumDir; // reseteamos
+                        for (unsigned j = 0; j < NUM_MAX_SUBDIRECTORIES; j++)
+                            currentThread->directories[j] = restoreDir[j];
                         break;
                     } else { // es un subdirectorio
                         currentThread->numDirectories++;
                         currentThread->directories[currentThread->numDirectories] = x;
                     }
                     delete dir;
-                    delete oldDirfile;
+                    delete currentDirfile;
                 }
             }
 
@@ -198,13 +206,12 @@ SyscallHandler(ExceptionType _et)
                     currentThread->numDirectories--;
                 }
                 else {
-                    int oldNumDir = currentThread->numDirectories;
-                    int oldDir = currentThread->directories[oldNumDir];
-                    OpenFile* oldDirfile = new OpenFile(oldDir);
-
-                    int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
+                    int currentNumDir = currentThread->numDirectories;
+                    int currentDir = currentThread->directories[currentNumDir];
+                    OpenFile* currentDirfile = new OpenFile(currentDir);
+                    int numDirEntries = currentDirfile->Length() / sizeof (DirectoryEntry);    
                     Directory* dir = new Directory(numDirEntries);
-                    dir->FetchFrom(oldDirfile);
+                    dir->FetchFrom(currentDirfile);
 
                     x = dir->Find(lastDir);
                     if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
@@ -212,7 +219,9 @@ SyscallHandler(ExceptionType _et)
                         DEBUG('e', "[%s] is not a sub directory.\n", lastDir);
                         const char* buffer = "Did not change directory.\n";
                         synchConsole->WriteBuffer((char*)buffer, 27);
-                        currentThread->numDirectories = oldNumDir; // reseteamos
+                        currentThread->numDirectories = restoreNumDir; // reseteamos
+                        for (unsigned j = 0; j < NUM_MAX_SUBDIRECTORIES; j++)
+                            currentThread->directories[j] = restoreDir[j];
                     }
                     else { // es un sub directorio
                         currentThread->numDirectories++;
@@ -224,61 +233,9 @@ SyscallHandler(ExceptionType _et)
                     }
 
                     delete dir;
-                    delete oldDirfile;
+                    delete currentDirfile;
                 }
             }
-
-
-            /* else { // es el nombre de un directorio. 
-                int oldNumDir = currentThread->numDirectories;
-                int oldDir = currentThread->directories[oldNumDir];
-                OpenFile* oldDirfile = new OpenFile(oldDir);
-                
-                int numDirEntries = oldDirfile->Length() / sizeof (DirectoryEntry);    
-                Directory* dir = new Directory(numDirEntries);
-                dir->FetchFrom(oldDirfile);
-                
-                char lastDir[FILE_NAME_MAX_LEN + 1];
-                char *otherDirs[10] = {NULL};
-                ParseDir(newDir, lastDir, otherDirs); 
-                int x = 0;
-                for (int i = 0; otherDirs[i] != NULL; i++) {
-                    x = dir->Find(otherDirs[i]);
-                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
-                        // no es una dir entry, o bien lo es pero es un archivo
-                        DEBUG('e', "[%s] is not a sub directory.\n", otherDirs[i]);
-                        const char* buffer = "Did not change directory.\n";
-                        synchConsole->WriteBuffer((char*)buffer, 27);
-                        currentThread->numDirectories = oldNumDir; // reseteamos
-                        break;
-                    }
-                    else { // es un subdirectorio
-                        currentThread->numDirectories++;
-                        currentThread->directories[currentThread->numDirectories] = x;
-                    }
-                }
-                if (x != -1) {
-                    x = dir->Find(lastDir);
-                    if (x == -1 || !dir->IsDirectory((unsigned)x)) { 
-                        // no es una dir entry, o bien lo es pero es un archivo
-                        DEBUG('e', "[%s] is not a sub directory.\n", lastDir);
-                        const char* buffer = "Did not change directory.\n";
-                        synchConsole->WriteBuffer((char*)buffer, 27);
-                        currentThread->numDirectories = oldNumDir; // reseteamos
-                    }
-                    else { // es un sub directorio
-                        currentThread->numDirectories++;
-                        currentThread->directories[currentThread->numDirectories] = x;
-                        const char* buffer = "Now in directory ";
-                        synchConsole->WriteBuffer((char*)buffer, 18);
-                        synchConsole->WriteBuffer(lastDir, strlen(lastDir));
-                        synchConsole->WriteBuffer((char*)"\n", 2);
-                    }
-                }
-
-                delete dir;
-                delete oldDirfile;
-            }*/
             machine->WriteRegister(2, 0);
             #endif
             break;
