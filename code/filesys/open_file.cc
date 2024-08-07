@@ -135,13 +135,13 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     buf = new char [numSectors * SECTOR_SIZE];
 
     // solo es null cuando se crea el sistema de archivos de nachos
-    if (fileSystem && fileSystem->directories->NotInList(sector))
+    if (fileSystem)
         fileSystem->AcquireRead(sector);
     for (unsigned i = firstSector; i <= lastSector; i++) {
         synchDisk->ReadSector(hdr->ByteToSector(i * SECTOR_SIZE),
                               &buf[(i - firstSector) * SECTOR_SIZE]);
     }
-    if (fileSystem && fileSystem->directories->NotInList(sector))
+    if (fileSystem)
         fileSystem->ReleaseRead(sector);
 
     // Copy the part we want.
@@ -210,13 +210,13 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
     // Write modified sectors back.
     // solo es null cuando se crea el sistema de archivos de nachos
-    if (fileSystem && fileSystem->directories->NotInList(sector))
+    if (fileSystem)
         fileSystem->AcquireWrite(sector);
     for (unsigned i = firstSector; i <= lastSector; i++) {
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     }
-    if (fileSystem && fileSystem->directories->NotInList(sector))
+    if (fileSystem)
         fileSystem->ReleaseWrite(sector);
     delete [] buf;
     return numBytes;

@@ -135,7 +135,6 @@ OpenFileList::AcquireRead(int sector)
             return;
         }
     }
-    ASSERT(0);
     return;
 }
 
@@ -155,7 +154,6 @@ OpenFileList::ReleaseRead(int sector)
             return;
         }
     }
-    ASSERT(0);
     return;
 }
 
@@ -171,7 +169,6 @@ OpenFileList::AcquireWrite(int sector)
             return;
         }
     }
-    ASSERT(0);
     return;
 }
 
@@ -186,7 +183,6 @@ OpenFileList::ReleaseWrite(int sector)
             return;
         }
     }
-    ASSERT(0);
     return;
 }
 
