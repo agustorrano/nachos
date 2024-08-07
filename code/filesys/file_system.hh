@@ -165,6 +165,8 @@ public:
 
     void ReleaseWrite(int sector);
 
+    DirectoryList *directories;
+
 private:
     OpenFileTable *openfiles;
 
@@ -175,8 +177,6 @@ private:
     Lock *lockBitmap;
 
     // Lock *lockDirectory;
-
-    DirectoryList *directories;
 };
 
 #endif

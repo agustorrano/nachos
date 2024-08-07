@@ -29,7 +29,7 @@ public:
 
     bool CloseDirectory(int sector);
 
-    bool CanDelete(int sector);
+    bool NotInList(int sector);
 
     DirEntry *first;  ///< Head of the list, null if list is empty.
     DirEntry *last;   ///< Last element of list.

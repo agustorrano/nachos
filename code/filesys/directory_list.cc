@@ -82,7 +82,7 @@ DirectoryList::CloseDirectory(int sector)
 }
 
 bool 
-DirectoryList::CanDelete(int sector)
+DirectoryList::NotInList(int sector)
 {
     for (DirEntry *ptr = first; ptr != nullptr; ptr = ptr->next) {
         if (ptr->sector == sector)

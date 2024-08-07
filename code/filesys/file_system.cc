@@ -136,6 +136,8 @@ FileSystem::FileSystem(bool format)
         // Nachos is running.
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
+        openfiles->OpenFileAdd(FREE_MAP_SECTOR);
+        openfiles->OpenFileAdd(DIRECTORY_SECTOR);
     }
 }
 
@@ -307,6 +309,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDir)
                 DEBUG('f', "Successful creation of file %s.\n", name);
                 h->WriteBack(sector);
                 if (isDir) {
+                    directories->AddDirectory(sector);
                     OpenFile *newFile = new OpenFile(sector);
                     newDir->WriteBack(newFile);
                     //delete newFile;
