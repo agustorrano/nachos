@@ -104,6 +104,8 @@ FileSystem::FileSystem(bool format)
 
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
+        openfiles->OpenFileAdd(FREE_MAP_SECTOR);
+        openfiles->OpenFileAdd(DIRECTORY_SECTOR);
 
         // Once we have the files “open”, we can write the initial version of
         // each file back to disk.  The directory at this point is completely
@@ -399,7 +401,7 @@ FileSystem::Open(const char *name)
     if (dir->IsDirectory(sector))
         DEBUG('f', "Trying to open directory %s.\n", fileName);
 
-    else if (sector >= 0 && openfiles->OpenFileAdd(sector, (char*)name)) {
+    else if (sector >= 0 && openfiles->OpenFileAdd(sector)) {
         DEBUG('f', "We add the file to the table for the first time.\n");
         openFile = new OpenFile(sector);  // `name` was found in directory.
     }
@@ -798,4 +800,28 @@ FileSystem::ReleaseFreeMap(Bitmap *freeMap)
     freeMap->WriteBack(freeMapFile);
     // lockBitmap->Release();
     delete freeMap;
+}
+
+void 
+FileSystem::AcquireRead(int sector)
+{
+    openfiles->AcquireRead(sector);
+}
+
+void 
+FileSystem::ReleaseRead(int sector)
+{
+    openfiles->ReleaseRead(sector);
+}
+
+void 
+FileSystem::AcquireWrite(int sector)
+{
+    openfiles->AcquireWrite(sector);
+}
+
+void 
+FileSystem::ReleaseWrite(int sector)
+{
+    openfiles->ReleaseWrite(sector);
 }

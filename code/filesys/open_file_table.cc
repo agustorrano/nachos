@@ -1,17 +1,22 @@
 #include "open_file_table.hh"
+#include "threads/lock.hh"
+#include "threads/condition.hh"
 
-OpenFileEntry::OpenFileEntry(int s, char* n) 
+OpenFileEntry::OpenFileEntry(int s) 
 {
     toDelete = 0;
     numThreads = 1;
     sector = s;
-    strcpy(name, n);
+    lockReadCount = new Lock("lockReadCount");
+    readCount = 0;
+    noReaders = new Condition("noReaders", lockReadCount);
     next = nullptr;
 }
 
 OpenFileEntry::~OpenFileEntry() 
 {
-    //
+    delete lockReadCount;
+    delete noReaders;
 }
 
 
@@ -42,7 +47,7 @@ OpenFileList::IsEmpty()
 
 
 bool
-OpenFileList::OpenFileAdd(int sector, char *name) 
+OpenFileList::OpenFileAdd(int sector) 
 {   
     ListNode *ptr;
     for (ptr = first; ptr != nullptr; ptr = ptr->next) {
@@ -54,7 +59,7 @@ OpenFileList::OpenFileAdd(int sector, char *name)
             return false;
         }
     } // no lo encontró, lo agrego.
-    ListNode *element = new ListNode(sector, name);
+    ListNode *element = new ListNode(sector);
     if (IsEmpty()) {
         first = element;
         last = element;
@@ -116,6 +121,75 @@ OpenFileList::CloseOpenFile(int sector)
     return false;
 }
 
+void 
+OpenFileList::AcquireRead(int sector)
+{
+    ListNode *ptr;
+    for (ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (ptr->sector == sector) {
+            if (!ptr->lockReadCount->IsHeldByCurrentThread()) {
+                ptr->lockReadCount->Acquire();
+                ptr->readCount++;
+                ptr->lockReadCount->Release();
+            }
+            return;
+        }
+    }
+    ASSERT(0);
+    return;
+}
+
+void 
+OpenFileList::ReleaseRead(int sector)
+{
+    ListNode *ptr;
+    for (ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (ptr->sector == sector) {
+            if (!ptr->lockReadCount->IsHeldByCurrentThread()) {
+                ptr->lockReadCount->Acquire();
+                ptr->readCount--;
+                if (ptr->readCount == 0)
+                    ptr->noReaders->Broadcast();
+                ptr->lockReadCount->Release();
+            }
+            return;
+        }
+    }
+    ASSERT(0);
+    return;
+}
+
+void 
+OpenFileList::AcquireWrite(int sector)
+{
+    ListNode *ptr;
+    for (ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (ptr->sector == sector) {
+            ptr->lockReadCount->Acquire();
+            while (ptr->readCount > 0)
+                ptr->noReaders->Wait();
+            return;
+        }
+    }
+    ASSERT(0);
+    return;
+}
+
+void 
+OpenFileList::ReleaseWrite(int sector)
+{
+    ListNode *ptr;
+    for (ptr = first; ptr != nullptr; ptr = ptr->next) {
+        if (ptr->sector == sector) {
+            ptr->noReaders->Broadcast();
+            ptr->lockReadCount->Release();
+            return;
+        }
+    }
+    ASSERT(0);
+    return;
+}
+
 OpenFileTable::OpenFileTable(int cap){
   	table = new OpenFileList[cap];
   	capacity = cap;
@@ -128,9 +202,9 @@ OpenFileTable::~OpenFileTable(){
 }
 
 bool
-OpenFileTable::OpenFileAdd(int sector, char *name) {
+OpenFileTable::OpenFileAdd(int sector) {
 	int hash = getHash(sector);
-	return table[hash].OpenFileAdd(sector, name); // lo agrego a la casilla de la tabla que corresponde
+	return table[hash].OpenFileAdd(sector); // lo agrego a la casilla de la tabla que corresponde
 }
 
 bool
@@ -150,4 +224,32 @@ bool
 OpenFileTable::CloseOpenFile(int sector) {
 	int hash = getHash(sector);
 	return table[hash].CloseOpenFile(sector); 
+}
+
+void 
+OpenFileTable::AcquireRead(int sector)
+{
+    int hash = getHash(sector);
+    table[hash].AcquireRead(sector);
+}
+
+void 
+OpenFileTable::ReleaseRead(int sector)
+{
+    int hash = getHash(sector);
+    table[hash].ReleaseRead(sector);
+}
+
+void 
+OpenFileTable::AcquireWrite(int sector)
+{
+    int hash = getHash(sector);
+    table[hash].AcquireWrite(sector);
+}
+
+void 
+OpenFileTable::ReleaseWrite(int sector)
+{
+    int hash = getHash(sector);
+    table[hash].ReleaseWrite(sector);
 }

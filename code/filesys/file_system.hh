@@ -157,6 +157,14 @@ public:
 
     void ReleaseFreeMap(Bitmap *freeMap);
 
+    void AcquireRead(int sector);
+
+    void ReleaseRead(int sector);
+
+    void AcquireWrite(int sector);
+
+    void ReleaseWrite(int sector);
+
 private:
     OpenFileTable *openfiles;
 
