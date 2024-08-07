@@ -37,14 +37,14 @@ int PickVictim(AddressSpace** spaceDir, unsigned* vpnDir)
                 }
                 else {
                     pageTable[vpn].use = 0;
-                    memCoreMap->clockFrames->Pop();
-                    memCoreMap->clockFrames->Append(frame);
                 }
             }
             else { // clock == 3
                 victim = frame;
                 return victim;
             }
+            memCoreMap->clockFrames->Pop();
+            memCoreMap->clockFrames->Append(frame);
         }
     }
 
